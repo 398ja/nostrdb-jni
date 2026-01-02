@@ -19,6 +19,17 @@
         <jackson.version>2.17.0</jackson.version>
     </properties>
 
+    <distributionManagement>
+        <repository>
+            <id>reposilite-releases</id>
+            <url>https://maven.398ja.xyz/releases</url>
+        </repository>
+        <snapshotRepository>
+            <id>reposilite-snapshots</id>
+            <url>https://maven.398ja.xyz/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <dependencies>
         <!-- JSON parsing -->
         <dependency>

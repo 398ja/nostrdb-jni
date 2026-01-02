@@ -19,13 +19,9 @@ pub enum Error {
     #[error("Nostrdb error: {0}")]
     Nostrdb(#[from] nostrdb::Error),
 
-    /// Invalid event ID length (expected 32 bytes)
-    #[error("Invalid event ID length: expected 32 bytes, got {0}")]
+    /// Invalid byte array length (expected 32 bytes for IDs/pubkeys)
+    #[error("Invalid length: expected 32 bytes, got {0}")]
     InvalidIdLength(usize),
-
-    /// Invalid pubkey length (expected 32 bytes)
-    #[error("Invalid pubkey length: expected 32 bytes, got {0}")]
-    InvalidPubkeyLength(usize),
 
     /// Null pointer encountered
     #[error("Null pointer: {0}")]
@@ -58,9 +54,7 @@ impl Error {
                 nostrdb::Error::DbOpenFailed => "java/io/IOException",
                 _ => "xyz/tcheeric/nostrdb/NostrdbException",
             },
-            Error::InvalidIdLength(_) | Error::InvalidPubkeyLength(_) => {
-                "java/lang/IllegalArgumentException"
-            }
+            Error::InvalidIdLength(_) => "java/lang/IllegalArgumentException",
             Error::NullPointer(_) => "java/lang/NullPointerException",
             Error::InvalidUtf8(_) => "java/lang/IllegalArgumentException",
             Error::Json(_) => "xyz/tcheeric/nostrdb/NostrdbException",

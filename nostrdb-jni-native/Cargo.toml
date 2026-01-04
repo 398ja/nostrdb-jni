@@ -3,7 +3,7 @@ name = "nostrdb-jni"
 version = "0.1.0"
 edition = "2021"
 description = "JNI bindings for nostrdb - high-performance embedded Nostr database"
-authors = ["Eric Tcheeric"]
+authors = ["398ja"]
 license = "GPL-3.0-or-later"
 
 [lib]

@@ -40,7 +40,7 @@ Create a new Maven project with the following `pom.xml`:
         <dependency>
             <groupId>xyz.tcheeric</groupId>
             <artifactId>nostrdb-jni</artifactId>
-            <version>0.1.0-SNAPSHOT</version>
+            <version>0.1.1</version>
         </dependency>
     </dependencies>
 </project>

@@ -1,6 +1,6 @@
 [package]
 name = "nostrdb-jni"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "JNI bindings for nostrdb - high-performance embedded Nostr database"
 authors = ["398ja"]

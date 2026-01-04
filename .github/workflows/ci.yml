@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - master
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      CARGO_TERM_COLOR: always
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Cache Cargo artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            nostrdb-jni-native/target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('nostrdb-jni-native/Cargo.lock') }}
+
+      - name: Build native library (cargo build --release)
+        run: cargo build --release
+        working-directory: nostrdb-jni-native
+
+      - name: Build Java library (mvn clean package)
+        run: mvn -B -ntp clean package
+        working-directory: nostrdb-jni-java
+
+      - name: Install to local Maven repository (mvn install)
+        run: mvn -B -ntp install
+        working-directory: nostrdb-jni-java

@@ -1,6 +1,6 @@
 [package]
 name = "nostrdb-jni"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "JNI bindings for nostrdb - high-performance embedded Nostr database"
 authors = ["398ja"]
@@ -13,8 +13,9 @@ crate-type = ["cdylib"]  # Dynamic library for JNI
 # JNI bindings
 jni = "0.21"
 
-# nostrdb - the core library (path to local nostrdb-rs)
-nostrdb = { path = "../../nostrdb-rs" }
+# nostrdb - the core library (remote git for CI)
+# Note: repo uses a `master` branch.
+nostrdb = { git = "https://github.com/398ja/nostrdb-rs.git", branch = "master" }
 
 # Error handling
 thiserror = "2.0"

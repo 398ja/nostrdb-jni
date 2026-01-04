@@ -71,7 +71,7 @@ This documentation follows the [Diátaxis](https://diataxis.fr/) framework.
 <dependency>
     <groupId>xyz.tcheeric</groupId>
     <artifactId>nostrdb-jni</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.1-SNAPSHOT</version>
 </dependency>
 ```
 

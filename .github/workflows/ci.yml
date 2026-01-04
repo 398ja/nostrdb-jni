@@ -35,9 +35,6 @@ jobs:
             nostrdb-jni-native/target
           key: ${{ runner.os }}-cargo-${{ hashFiles('nostrdb-jni-native/Cargo.lock') }}
 
-      - name: Clone nostrdb-rs dependency (sibling per docs/how-to/build-from-source.md)
-        run: git clone --depth 1 https://github.com/damus-io/nostrdb.git ../nostrdb-rs
-
       - name: Build native library (cargo build --release)
         run: cargo build --release
         working-directory: nostrdb-jni-native

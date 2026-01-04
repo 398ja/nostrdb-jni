@@ -31,12 +31,7 @@ winget install EclipseAdoptium.Temurin.21.JDK
 
 ### nostrdb-rs dependency
 
-Clone nostrdb-rs as a sibling directory:
-
-```bash
-cd ~/IdeaProjects
-git clone https://github.com/damus-io/nostrdb nostrdb-rs
-```
+The native crate pulls `nostrdb` from the remote git repo `https://github.com/398ja/nostrdb-rs.git` (branch `master`). No manual clone is required for a normal build. If you want to work with a local checkout instead, add a Cargo `[patch]` override pointing to your local path.
 
 ## Build the native library
 

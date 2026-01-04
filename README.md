@@ -1,6 +1,6 @@
 # nostrdb-jni
 
-High-performance Java bindings for [nostrdb](https://github.com/damus-io/nostrdb) - an embedded Nostr event database backed by LMDB.
+nostrdb-jni brings the nostrdb embedded Nostr event database to the JVM with a Rust-based JNI layer and a type-safe Java API. It packages the LMDB-backed storage engine, full-text search, and streaming subscriptions into a single library so you can ingest, query, and serve Nostr events directly from Java services, relays, or bots without managing an external datastore.
 
 ## Features
 

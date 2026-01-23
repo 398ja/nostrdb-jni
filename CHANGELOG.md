@@ -9,11 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.1.2] - 2026-01-23
 
+### Added
+
+- `Filter.MAX_LIMIT` constant (100,000,000) to define safe upper bound for query limits
+- Limit validation in `Filter.Builder.limit()`, `Ndb.query()`, `Ndb.queryNotes()`, `Ndb.searchProfiles()`, and `Ndb.pollForNotes()`
+
 ### Fixed
 
 - Add panic safety to all JNI native functions to prevent JVM crashes
 - Rust panics now throw `RuntimeException` with helpful diagnostic messages instead of aborting the JVM
 - Protected close/destroy operations and filter builder functions with `catch_unwind`
+- Prevent integer overflow by validating limit parameters before passing to native code
 
 ## [0.1.1] - 2025-01-22
 

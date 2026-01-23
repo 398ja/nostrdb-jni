@@ -23,6 +23,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public final class Filter implements Closeable {
 
+    /**
+     * Maximum allowed limit for queries.
+     * This prevents integer overflow and excessive memory allocation in native code.
+     * Value chosen to be large enough for practical use but safe from overflow when
+     * multiplied by small factors (e.g., limit * 10 for chunk reassembly).
+     */
+    public static final int MAX_LIMIT = 100_000_000;
+
     private final long ptr;
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
@@ -233,11 +241,19 @@ public final class Filter implements Closeable {
         /**
          * Set the result limit.
          *
-         * @param limit Maximum number of results
+         * @param limit Maximum number of results (must be positive and at most {@link Filter#MAX_LIMIT})
          * @return this builder
+         * @throws IllegalArgumentException if limit is not positive or exceeds MAX_LIMIT
          */
         public Builder limit(int limit) {
             checkNotBuilt();
+            if (limit <= 0) {
+                throw new IllegalArgumentException("Limit must be positive, got: " + limit);
+            }
+            if (limit > MAX_LIMIT) {
+                throw new IllegalArgumentException(
+                        "Limit exceeds maximum allowed value of " + MAX_LIMIT + ", got: " + limit);
+            }
             ptr = NostrdbNative.filterLimit(ptr, limit);
             if (ptr == 0) {
                 throw new NostrdbException("Failed to set limit on filter");

@@ -15,8 +15,8 @@ mod util;
 
 use error::{Error, Result};
 use util::{
-    box_to_ptr, drop_ptr, java_bytes_to_32, java_bytes_to_rust, java_string_to_rust,
-    rust_bytes_to_java, with_exception,
+    box_to_ptr, catch_panic, catch_panic_void, drop_ptr, java_bytes_to_32, java_bytes_to_rust,
+    java_string_to_rust, rust_bytes_to_java, with_exception,
 };
 
 // ============================================================================
@@ -53,9 +53,9 @@ pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_ndbClose(
     _class: JClass,
     ndb_ptr: jlong,
 ) {
-    unsafe {
+    catch_panic_void(|| unsafe {
         drop_ptr::<Arc<Ndb>>(ndb_ptr);
-    }
+    });
 }
 
 // ============================================================================
@@ -148,9 +148,9 @@ pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_endTransaction(
     _class: JClass,
     txn_ptr: jlong,
 ) {
-    unsafe {
+    catch_panic_void(|| unsafe {
         drop_ptr::<Transaction>(txn_ptr);
-    }
+    });
 }
 
 // ============================================================================
@@ -274,8 +274,10 @@ pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_filterNew(
     _env: JNIEnv,
     _class: JClass,
 ) -> jlong {
-    let filter = Filter::new();
-    box_to_ptr(filter)
+    catch_panic(0, || {
+        let filter = Filter::new();
+        box_to_ptr(filter)
+    })
 }
 
 /// Add kinds to filter
@@ -391,9 +393,11 @@ pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_filterSince(
     filter_ptr: jlong,
     since: jlong,
 ) -> jlong {
-    let filter = unsafe { Box::from_raw(filter_ptr as *mut nostrdb::FilterBuilder) };
-    let new_filter = filter.since(since as u64);
-    box_to_ptr(new_filter)
+    catch_panic(filter_ptr, || {
+        let filter = unsafe { Box::from_raw(filter_ptr as *mut nostrdb::FilterBuilder) };
+        let new_filter = filter.since(since as u64);
+        box_to_ptr(new_filter)
+    })
 }
 
 /// Set until timestamp
@@ -404,9 +408,11 @@ pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_filterUntil(
     filter_ptr: jlong,
     until: jlong,
 ) -> jlong {
-    let filter = unsafe { Box::from_raw(filter_ptr as *mut nostrdb::FilterBuilder) };
-    let new_filter = filter.until(until as u64);
-    box_to_ptr(new_filter)
+    catch_panic(filter_ptr, || {
+        let filter = unsafe { Box::from_raw(filter_ptr as *mut nostrdb::FilterBuilder) };
+        let new_filter = filter.until(until as u64);
+        box_to_ptr(new_filter)
+    })
 }
 
 /// Set limit
@@ -417,9 +423,11 @@ pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_filterLimit(
     filter_ptr: jlong,
     limit: jlong,
 ) -> jlong {
-    let filter = unsafe { Box::from_raw(filter_ptr as *mut nostrdb::FilterBuilder) };
-    let new_filter = filter.limit(limit as u64);
-    box_to_ptr(new_filter)
+    catch_panic(filter_ptr, || {
+        let filter = unsafe { Box::from_raw(filter_ptr as *mut nostrdb::FilterBuilder) };
+        let new_filter = filter.limit(limit as u64);
+        box_to_ptr(new_filter)
+    })
 }
 
 /// Full-text search
@@ -445,9 +453,11 @@ pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_filterBuild(
     _class: JClass,
     filter_ptr: jlong,
 ) -> jlong {
-    let mut filter = unsafe { Box::from_raw(filter_ptr as *mut nostrdb::FilterBuilder) };
-    let built = filter.build();
-    box_to_ptr(built)
+    catch_panic(0, || {
+        let mut filter = unsafe { Box::from_raw(filter_ptr as *mut nostrdb::FilterBuilder) };
+        let built = filter.build();
+        box_to_ptr(built)
+    })
 }
 
 /// Destroy filter
@@ -457,9 +467,9 @@ pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_filterDestroy(
     _class: JClass,
     filter_ptr: jlong,
 ) {
-    unsafe {
+    catch_panic_void(|| unsafe {
         drop_ptr::<Filter>(filter_ptr);
-    }
+    });
 }
 
 // ============================================================================

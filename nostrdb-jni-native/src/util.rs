@@ -1,11 +1,13 @@
 //! JNI utility functions for nostrdb-jni
 //!
 //! This module provides helper functions for working with JNI,
-//! including exception throwing, type conversions, and pointer handling.
+//! including exception throwing, type conversions, pointer handling,
+//! and panic safety for FFI boundaries.
 
 use jni::objects::{JByteArray, JString};
 use jni::sys::{jbyteArray, jlong};
 use jni::JNIEnv;
+use std::panic::{catch_unwind, AssertUnwindSafe};
 
 use crate::error::{Error, Result};
 
@@ -169,22 +171,104 @@ pub unsafe fn drop_ptr<T>(ptr: jlong) {
 
 /// Execute a closure and handle errors by throwing Java exceptions
 ///
+/// This function provides panic safety by catching any panics that occur
+/// during execution and converting them to Java exceptions. This prevents
+/// panics from unwinding across the FFI boundary, which would cause
+/// undefined behavior.
+///
 /// # Arguments
 /// * `env` - The JNI environment
 /// * `default` - The default value to return on error
 /// * `f` - The closure to execute
 ///
 /// # Returns
-/// The result of the closure, or the default value on error
+/// The result of the closure, or the default value on error/panic
 pub fn with_exception<T, F>(env: &mut JNIEnv, default: T, f: F) -> T
 where
     F: FnOnce(&mut JNIEnv) -> Result<T>,
 {
-    match f(env) {
-        Ok(value) => value,
-        Err(e) => {
+    // Wrap in catch_unwind to prevent panics from crossing FFI boundary
+    let result = catch_unwind(AssertUnwindSafe(|| f(env)));
+
+    match result {
+        Ok(Ok(value)) => value,
+        Ok(Err(e)) => {
             throw_exception(env, &e);
             default
         }
+        Err(panic_info) => {
+            // Extract panic message if possible
+            let message = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic in native code".to_string()
+            };
+
+            let error = Error::Panic(format!(
+                "Native code panicked: {}. This may indicate use-after-free, \
+                 corrupted state, or a bug in the native library. \
+                 Ensure all resources (Transaction, Filter) are closed before Ndb.",
+                message
+            ));
+            throw_exception(env, &error);
+            default
+        }
+    }
+}
+
+/// Execute a closure with panic safety, returning a default on panic
+///
+/// Use this for simple operations that don't need JNI exception throwing
+/// but should still be panic-safe (e.g., close/destroy operations).
+///
+/// # Arguments
+/// * `default` - The default value to return on panic
+/// * `f` - The closure to execute
+///
+/// # Returns
+/// The result of the closure, or the default value on panic
+pub fn catch_panic<T, F>(default: T, f: F) -> T
+where
+    F: FnOnce() -> T,
+{
+    match catch_unwind(AssertUnwindSafe(f)) {
+        Ok(value) => value,
+        Err(panic_info) => {
+            // Log the panic for debugging
+            let message = if let Some(s) = panic_info.downcast_ref::<&str>() {
+                s.to_string()
+            } else if let Some(s) = panic_info.downcast_ref::<String>() {
+                s.clone()
+            } else {
+                "Unknown panic".to_string()
+            };
+            tracing::error!("Panic caught in native code: {}", message);
+            default
+        }
+    }
+}
+
+/// Execute a void closure with panic safety
+///
+/// Use this for operations that return nothing but might panic
+/// (e.g., close/destroy operations).
+///
+/// # Arguments
+/// * `f` - The closure to execute
+pub fn catch_panic_void<F>(f: F)
+where
+    F: FnOnce(),
+{
+    if let Err(panic_info) = catch_unwind(AssertUnwindSafe(f)) {
+        let message = if let Some(s) = panic_info.downcast_ref::<&str>() {
+            s.to_string()
+        } else if let Some(s) = panic_info.downcast_ref::<String>() {
+            s.clone()
+        } else {
+            "Unknown panic".to_string()
+        };
+        tracing::error!("Panic caught in native code: {}", message);
     }
 }

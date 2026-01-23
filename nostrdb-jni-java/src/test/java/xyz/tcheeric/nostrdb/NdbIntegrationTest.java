@@ -361,4 +361,95 @@ class NdbIntegrationTest {
         assertEquals(r1, r2);
         assertEquals(r1.hashCode(), r2.hashCode());
     }
+
+    // Limit validation tests - prevent integer overflow in native code
+
+    @Test
+    @Order(23)
+    @DisplayName("Filter.Builder.limit() should reject zero limit")
+    void testFilterBuilderRejectsZeroLimit() {
+        // Test that zero limit is rejected
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                Filter.builder().kinds(1).limit(0).build()
+        );
+        assertTrue(ex.getMessage().contains("positive"));
+    }
+
+    @Test
+    @Order(24)
+    @DisplayName("Filter.Builder.limit() should reject negative limit")
+    void testFilterBuilderRejectsNegativeLimit() {
+        // Test that negative limit is rejected
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                Filter.builder().kinds(1).limit(-1).build()
+        );
+        assertTrue(ex.getMessage().contains("positive"));
+    }
+
+    @Test
+    @Order(25)
+    @DisplayName("Filter.Builder.limit() should reject excessive limit")
+    void testFilterBuilderRejectsExcessiveLimit() {
+        // Test that limit exceeding MAX_LIMIT is rejected
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                Filter.builder().kinds(1).limit(Filter.MAX_LIMIT + 1).build()
+        );
+        assertTrue(ex.getMessage().contains("maximum"));
+    }
+
+    @Test
+    @Order(26)
+    @DisplayName("Ndb.query() should reject excessive limit")
+    void testNdbQueryRejectsExcessiveLimit() {
+        // Test that query with excessive limit is rejected
+        try (Transaction txn = ndb.beginTransaction();
+             Filter filter = Filter.builder().kinds(1).build()) {
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                    ndb.query(txn, filter, Filter.MAX_LIMIT + 1)
+            );
+            assertTrue(ex.getMessage().contains("maximum"));
+        }
+    }
+
+    @Test
+    @Order(27)
+    @DisplayName("Ndb.queryNotes() should reject excessive limit")
+    void testNdbQueryNotesRejectsExcessiveLimit() {
+        // Test that queryNotes with excessive limit is rejected
+        try (Transaction txn = ndb.beginTransaction();
+             Filter filter = Filter.builder().kinds(1).build()) {
+
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                    ndb.queryNotes(txn, filter, Integer.MAX_VALUE)
+            );
+            assertTrue(ex.getMessage().contains("maximum"));
+        }
+    }
+
+    @Test
+    @Order(28)
+    @DisplayName("Ndb.searchProfiles() should reject excessive limit")
+    void testNdbSearchProfilesRejectsExcessiveLimit() {
+        // Test that searchProfiles with excessive limit is rejected
+        try (Transaction txn = ndb.beginTransaction()) {
+            IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () ->
+                    ndb.searchProfiles(txn, "test", Integer.MAX_VALUE)
+            );
+            assertTrue(ex.getMessage().contains("maximum"));
+        }
+    }
+
+    @Test
+    @Order(29)
+    @DisplayName("Filter.MAX_LIMIT should prevent integer overflow")
+    void testMaxLimitPreventsOverflow() {
+        // Verify that MAX_LIMIT * 10 does not overflow
+        // This is the operation that was causing the native panic
+        long result = (long) Filter.MAX_LIMIT * 10;
+        assertTrue(result <= Integer.MAX_VALUE,
+                "MAX_LIMIT * 10 should not exceed Integer.MAX_VALUE");
+        assertTrue(result > 0,
+                "MAX_LIMIT * 10 should be positive (no overflow)");
+    }
 }

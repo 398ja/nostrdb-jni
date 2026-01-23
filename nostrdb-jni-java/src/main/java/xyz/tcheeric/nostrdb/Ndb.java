@@ -183,11 +183,13 @@ public final class Ndb implements Closeable {
      *
      * @param txn The transaction
      * @param filter The query filter
-     * @param limit Maximum number of results
+     * @param limit Maximum number of results (must be positive and at most {@link Filter#MAX_LIMIT})
      * @return List of query results (note keys)
+     * @throws IllegalArgumentException if limit is not positive or exceeds MAX_LIMIT
      */
     public List<QueryResult> query(Transaction txn, Filter filter, int limit) {
         checkOpen();
+        validateLimit(limit);
         byte[] resultData = NostrdbNative.query(ptr, txn.ptr(), filter.ptr(), limit);
         return QueryResult.parseResults(resultData);
     }
@@ -199,10 +201,12 @@ public final class Ndb implements Closeable {
      *
      * @param txn The transaction
      * @param filter The query filter
-     * @param limit Maximum number of results
+     * @param limit Maximum number of results (must be positive and at most {@link Filter#MAX_LIMIT})
      * @return List of notes
+     * @throws IllegalArgumentException if limit is not positive or exceeds MAX_LIMIT
      */
     public List<Note> queryNotes(Transaction txn, Filter filter, int limit) {
+        validateLimit(limit);
         List<QueryResult> results = query(txn, filter, limit);
         List<Note> notes = new ArrayList<>(results.size());
 
@@ -245,11 +249,13 @@ public final class Ndb implements Closeable {
      *
      * @param txn The transaction
      * @param query Search query (matches name/display_name)
-     * @param limit Maximum number of results
+     * @param limit Maximum number of results (must be positive and at most {@link Filter#MAX_LIMIT})
      * @return List of matching public keys
+     * @throws IllegalArgumentException if limit is not positive or exceeds MAX_LIMIT
      */
     public List<byte[]> searchProfiles(Transaction txn, String query, int limit) {
         checkOpen();
+        validateLimit(limit);
         byte[] resultData = NostrdbNative.searchProfiles(ptr, txn.ptr(), query, limit);
 
         if (resultData == null || resultData.length < 4) {
@@ -288,11 +294,13 @@ public final class Ndb implements Closeable {
      * Poll for new notes on a subscription.
      *
      * @param subscription The subscription
-     * @param maxNotes Maximum notes to return
+     * @param maxNotes Maximum notes to return (must be positive and at most {@link Filter#MAX_LIMIT})
      * @return List of note keys
+     * @throws IllegalArgumentException if maxNotes is not positive or exceeds MAX_LIMIT
      */
     public List<Long> pollForNotes(Subscription subscription, int maxNotes) {
         checkOpen();
+        validateLimit(maxNotes);
         byte[] resultData = NostrdbNative.pollForNotes(ptr, subscription.id(), maxNotes);
 
         if (resultData == null || resultData.length < 4) {
@@ -331,6 +339,22 @@ public final class Ndb implements Closeable {
     private void checkOpen() {
         if (closed.get()) {
             throw new IllegalStateException("Ndb is closed");
+        }
+    }
+
+    /**
+     * Validate that a limit parameter is within acceptable bounds.
+     *
+     * @param limit The limit to validate
+     * @throws IllegalArgumentException if limit is not positive or exceeds MAX_LIMIT
+     */
+    private static void validateLimit(int limit) {
+        if (limit <= 0) {
+            throw new IllegalArgumentException("Limit must be positive, got: " + limit);
+        }
+        if (limit > Filter.MAX_LIMIT) {
+            throw new IllegalArgumentException(
+                    "Limit exceeds maximum allowed value of " + Filter.MAX_LIMIT + ", got: " + limit);
         }
     }
 

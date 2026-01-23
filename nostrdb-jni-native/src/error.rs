@@ -42,6 +42,10 @@ pub enum Error {
     /// Invalid state
     #[error("Invalid state: {0}")]
     InvalidState(String),
+
+    /// Panic occurred in native code
+    #[error("Native panic: {0}")]
+    Panic(String),
 }
 
 impl Error {
@@ -60,6 +64,7 @@ impl Error {
             Error::Json(_) => "xyz/tcheeric/nostrdb/NostrdbException",
             Error::Filter(_) => "xyz/tcheeric/nostrdb/NostrdbException",
             Error::InvalidState(_) => "java/lang/IllegalStateException",
+            Error::Panic(_) => "java/lang/RuntimeException",
         }
     }
 }

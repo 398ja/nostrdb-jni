@@ -5,6 +5,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -88,6 +89,9 @@ public final class Ndb implements Closeable {
      */
     public void processEvent(String json) {
         checkOpen();
+        if (json == null || json.isBlank()) {
+            throw new IllegalArgumentException("JSON event cannot be null or blank");
+        }
         int result = NostrdbNative.processEvent(ptr, json);
         if (result == 0) {
             throw new NostrdbException("Failed to process event");
@@ -102,6 +106,9 @@ public final class Ndb implements Closeable {
      */
     public int processEvents(String ldjson) {
         checkOpen();
+        if (ldjson == null || ldjson.isBlank()) {
+            throw new IllegalArgumentException("LDJSON events cannot be null or blank");
+        }
         int result = NostrdbNative.processEvents(ptr, ldjson);
         if (result < 0) {
             throw new NostrdbException("Failed to process events");
@@ -139,6 +146,8 @@ public final class Ndb implements Closeable {
         if (eventId == null || eventId.length != 32) {
             throw new IllegalArgumentException("Event ID must be 32 bytes");
         }
+        // Defensive copy to prevent TOCTOU attacks
+        eventId = eventId.clone();
         byte[] data = NostrdbNative.getNoteById(ptr, txn.ptr(), eventId);
         return Optional.ofNullable(data).map(Note::fromBytes);
     }
@@ -229,6 +238,8 @@ public final class Ndb implements Closeable {
         if (pubkey == null || pubkey.length != 32) {
             throw new IllegalArgumentException("Pubkey must be 32 bytes");
         }
+        // Defensive copy to prevent TOCTOU attacks
+        pubkey = pubkey.clone();
         byte[] data = NostrdbNative.getProfileByPubkey(ptr, txn.ptr(), pubkey);
         return Optional.ofNullable(data).map(Profile::fromBytes);
     }
@@ -251,11 +262,15 @@ public final class Ndb implements Closeable {
      * @param query Search query (matches name/display_name)
      * @param limit Maximum number of results (must be positive and at most {@link Filter#MAX_LIMIT})
      * @return List of matching public keys
-     * @throws IllegalArgumentException if limit is not positive or exceeds MAX_LIMIT
+     * @throws IllegalArgumentException if limit is not positive or exceeds MAX_LIMIT, or query is too long
      */
     public List<byte[]> searchProfiles(Transaction txn, String query, int limit) {
         checkOpen();
         validateLimit(limit);
+        if (query != null && query.length() > Filter.MAX_SEARCH_LENGTH) {
+            throw new IllegalArgumentException(
+                    "Search query too long: " + query.length() + " (max: " + Filter.MAX_SEARCH_LENGTH + ")");
+        }
         byte[] resultData = NostrdbNative.searchProfiles(ptr, txn.ptr(), query, limit);
 
         if (resultData == null || resultData.length < 4) {
@@ -272,7 +287,7 @@ public final class Ndb implements Closeable {
             pubkeys.add(pubkey);
         }
 
-        return pubkeys;
+        return Collections.unmodifiableList(pubkeys);
     }
 
     /**
@@ -315,7 +330,7 @@ public final class Ndb implements Closeable {
             noteKeys.add(buf.getLong());
         }
 
-        return noteKeys;
+        return Collections.unmodifiableList(noteKeys);
     }
 
     /**

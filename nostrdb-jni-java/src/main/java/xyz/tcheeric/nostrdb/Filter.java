@@ -31,6 +31,36 @@ public final class Filter implements Closeable {
      */
     public static final int MAX_LIMIT = 100_000_000;
 
+    /**
+     * Maximum number of kinds allowed in a single filter.
+     * This prevents excessive memory allocation.
+     */
+    public static final int MAX_KINDS = 100;
+
+    /**
+     * Maximum number of authors allowed in a single filter.
+     * This prevents excessive memory allocation.
+     */
+    public static final int MAX_AUTHORS = 1000;
+
+    /**
+     * Maximum number of tag values allowed in a single tag filter.
+     * This prevents excessive memory allocation.
+     */
+    public static final int MAX_TAG_VALUES = 1000;
+
+    /**
+     * Maximum length of a search query string.
+     * This prevents abuse and excessive memory usage.
+     */
+    public static final int MAX_SEARCH_LENGTH = 1000;
+
+    /**
+     * Maximum length of a single tag value.
+     * This prevents abuse and excessive memory usage.
+     */
+    public static final int MAX_TAG_VALUE_LENGTH = 1000;
+
     private final long ptr;
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
@@ -87,11 +117,16 @@ public final class Filter implements Closeable {
          *
          * @param kinds The kinds to match (e.g., 1 for text notes, 0 for profiles)
          * @return this builder
+         * @throws IllegalArgumentException if too many kinds are specified
          */
         public Builder kinds(int... kinds) {
             checkNotBuilt();
             if (kinds == null || kinds.length == 0) {
                 return this;
+            }
+            if (kinds.length > MAX_KINDS) {
+                throw new IllegalArgumentException(
+                        "Too many kinds: " + kinds.length + " (max: " + MAX_KINDS + ")");
             }
 
             ByteBuffer buf = ByteBuffer.allocate(kinds.length * 4)
@@ -112,11 +147,16 @@ public final class Filter implements Closeable {
          *
          * @param pubkeysHex 64-character hex public keys
          * @return this builder
+         * @throws IllegalArgumentException if too many authors are specified
          */
         public Builder authors(String... pubkeysHex) {
             checkNotBuilt();
             if (pubkeysHex == null || pubkeysHex.length == 0) {
                 return this;
+            }
+            if (pubkeysHex.length > MAX_AUTHORS) {
+                throw new IllegalArgumentException(
+                        "Too many authors: " + pubkeysHex.length + " (max: " + MAX_AUTHORS + ")");
             }
 
             ByteBuffer buf = ByteBuffer.allocate(pubkeysHex.length * 32);
@@ -136,19 +176,25 @@ public final class Filter implements Closeable {
          *
          * @param pubkeys 32-byte public keys
          * @return this builder
+         * @throws IllegalArgumentException if too many authors are specified
          */
         public Builder authors(byte[]... pubkeys) {
             checkNotBuilt();
             if (pubkeys == null || pubkeys.length == 0) {
                 return this;
             }
+            if (pubkeys.length > MAX_AUTHORS) {
+                throw new IllegalArgumentException(
+                        "Too many authors: " + pubkeys.length + " (max: " + MAX_AUTHORS + ")");
+            }
 
             ByteBuffer buf = ByteBuffer.allocate(pubkeys.length * 32);
             for (byte[] pubkey : pubkeys) {
-                if (pubkey.length != 32) {
+                if (pubkey == null || pubkey.length != 32) {
                     throw new IllegalArgumentException("Pubkey must be 32 bytes");
                 }
-                buf.put(pubkey);
+                // Defensive copy to prevent TOCTOU attacks
+                buf.put(pubkey.clone());
             }
 
             ptr = NostrdbNative.filterAuthors(ptr, buf.array());
@@ -164,11 +210,22 @@ public final class Filter implements Closeable {
          * @param tagName Single-character tag name (e.g., "d", "p", "e")
          * @param values Tag values to match
          * @return this builder
+         * @throws IllegalArgumentException if too many tag values are specified or a value is too long
          */
         public Builder tag(String tagName, String... values) {
             checkNotBuilt();
             if (tagName == null || values == null || values.length == 0) {
                 return this;
+            }
+            if (values.length > MAX_TAG_VALUES) {
+                throw new IllegalArgumentException(
+                        "Too many tag values: " + values.length + " (max: " + MAX_TAG_VALUES + ")");
+            }
+            for (String value : values) {
+                if (value != null && value.length() > MAX_TAG_VALUE_LENGTH) {
+                    throw new IllegalArgumentException(
+                            "Tag value too long: " + value.length() + " (max: " + MAX_TAG_VALUE_LENGTH + ")");
+                }
             }
 
             ptr = NostrdbNative.filterTag(ptr, tagName, values);
@@ -266,11 +323,16 @@ public final class Filter implements Closeable {
          *
          * @param search Search query string
          * @return this builder
+         * @throws IllegalArgumentException if search query is too long
          */
         public Builder search(String search) {
             checkNotBuilt();
             if (search == null || search.isEmpty()) {
                 return this;
+            }
+            if (search.length() > MAX_SEARCH_LENGTH) {
+                throw new IllegalArgumentException(
+                        "Search query too long: " + search.length() + " (max: " + MAX_SEARCH_LENGTH + ")");
             }
             ptr = NostrdbNative.filterSearch(ptr, search);
             if (ptr == 0) {

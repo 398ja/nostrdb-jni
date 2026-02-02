@@ -3,7 +3,7 @@ package xyz.tcheeric.nostrdb;
 /**
  * Exception thrown by nostrdb operations.
  */
-public class NostrdbException extends RuntimeException {
+public final class NostrdbException extends RuntimeException {
 
     public NostrdbException(String message) {
         super(message);

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * A Nostr note (event).
@@ -128,9 +129,17 @@ public final class Note {
 
     /**
      * Get the event tags.
+     *
+     * @return unmodifiable view of the tags
      */
     public List<List<String>> tags() {
-        return tags;
+        if (tags == null) {
+            return List.of();
+        }
+        // Return unmodifiable view with unmodifiable inner lists
+        return tags.stream()
+                .map(List::copyOf)
+                .collect(Collectors.toUnmodifiableList());
     }
 
     /**

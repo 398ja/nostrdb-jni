@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -33,8 +32,6 @@ import java.util.stream.Collectors;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final class Note {
-
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final String id;
     private final String pubkey;
@@ -68,7 +65,7 @@ public final class Note {
     static Note fromBytes(byte[] data) {
         try {
             String json = new String(data, StandardCharsets.UTF_8);
-            return MAPPER.readValue(json, Note.class);
+            return JsonUtil.MAPPER.readValue(json, Note.class);
         } catch (JsonProcessingException e) {
             throw new NostrdbException("Failed to parse note JSON", e);
         }
@@ -79,7 +76,7 @@ public final class Note {
      */
     public static Note fromJson(String json) {
         try {
-            return MAPPER.readValue(json, Note.class);
+            return JsonUtil.MAPPER.readValue(json, Note.class);
         } catch (JsonProcessingException e) {
             throw new NostrdbException("Failed to parse note JSON", e);
         }
@@ -191,7 +188,7 @@ public final class Note {
      */
     public String toJson() {
         try {
-            return MAPPER.writeValueAsString(this);
+            return JsonUtil.MAPPER.writeValueAsString(this);
         } catch (JsonProcessingException e) {
             throw new NostrdbException("Failed to serialize note to JSON", e);
         }

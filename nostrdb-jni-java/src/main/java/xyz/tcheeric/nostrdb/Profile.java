@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.nio.charset.StandardCharsets;
 
@@ -31,8 +30,6 @@ import java.nio.charset.StandardCharsets;
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final class Profile {
-
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final String name;
     private final String displayName;
@@ -72,7 +69,7 @@ public final class Profile {
     static Profile fromBytes(byte[] data) {
         try {
             String json = new String(data, StandardCharsets.UTF_8);
-            return MAPPER.readValue(json, Profile.class);
+            return JsonUtil.MAPPER.readValue(json, Profile.class);
         } catch (JsonProcessingException e) {
             throw new NostrdbException("Failed to parse profile JSON", e);
         }
@@ -83,7 +80,7 @@ public final class Profile {
      */
     public static Profile fromJson(String json) {
         try {
-            return MAPPER.readValue(json, Profile.class);
+            return JsonUtil.MAPPER.readValue(json, Profile.class);
         } catch (JsonProcessingException e) {
             throw new NostrdbException("Failed to parse profile JSON", e);
         }
@@ -181,7 +178,7 @@ public final class Profile {
      */
     public String toJson() {
         try {
-            return MAPPER.writeValueAsString(this);
+            return JsonUtil.MAPPER.writeValueAsString(this);
         } catch (JsonProcessingException e) {
             throw new NostrdbException("Failed to serialize profile to JSON", e);
         }

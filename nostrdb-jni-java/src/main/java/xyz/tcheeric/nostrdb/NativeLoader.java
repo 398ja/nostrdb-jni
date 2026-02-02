@@ -41,25 +41,31 @@ final class NativeLoader {
             "/natives/" + libFileName
         };
 
-        InputStream is = null;
-        String foundPath = null;
-
         for (String path : resourcePaths) {
-            is = NativeLoader.class.getResourceAsStream(path);
-            if (is != null) {
-                foundPath = path;
-                break;
+            try (InputStream is = NativeLoader.class.getResourceAsStream(path)) {
+                if (is != null) {
+                    loadFromStream(is, libFileName);
+                    return;
+                }
             }
         }
 
-        if (is == null) {
-            throw new IOException("Native library not found in JAR: " + libFileName +
-                " (tried: " + String.join(", ", resourcePaths) + ")");
-        }
+        throw new IOException("Native library not found in JAR: " + libFileName +
+            " (tried: " + String.join(", ", resourcePaths) + ")");
+    }
 
+    /**
+     * Load a native library from an input stream.
+     *
+     * @param is The input stream containing the library
+     * @param libFileName The library file name
+     * @throws IOException if the library cannot be loaded
+     */
+    private static void loadFromStream(InputStream is, String libFileName) throws IOException {
+        Path tempFile = null;
         try {
             // Create a temporary file
-            Path tempFile = Files.createTempFile("nostrdb-", libFileName);
+            tempFile = Files.createTempFile("nostrdb-", libFileName);
             tempFile.toFile().deleteOnExit();
 
             // Copy the library to the temp file
@@ -67,8 +73,19 @@ final class NativeLoader {
 
             // Load the library
             System.load(tempFile.toAbsolutePath().toString());
-        } finally {
-            is.close();
+        } catch (IOException | UnsatisfiedLinkError e) {
+            // Clean up temp file on error
+            if (tempFile != null) {
+                try {
+                    Files.deleteIfExists(tempFile);
+                } catch (IOException ignored) {
+                    // Best effort cleanup
+                }
+            }
+            if (e instanceof IOException) {
+                throw (IOException) e;
+            }
+            throw new IOException("Failed to load native library", e);
         }
     }
 }

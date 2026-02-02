@@ -2,3 +2,4 @@
 /nostrdb-jni-java/target/
 /nostrdb-jni-native/target/
 /.claude/
+/nostrdb-jni-java/.claude/

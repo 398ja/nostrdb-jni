@@ -26,6 +26,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *     }
  * }
  * }</pre>
+ *
+ * <h2>Thread Safety</h2>
+ * <p>Subscription instances are <b>not thread-safe</b>. Each thread should create
+ * its own subscription. The poll methods should be called from a single thread.
+ *
+ * <h2>Resource Management</h2>
+ * <p>Subscription holds native resources and must be closed after use. Always use
+ * try-with-resources to ensure proper cleanup.
  */
 public final class Subscription implements Closeable {
 

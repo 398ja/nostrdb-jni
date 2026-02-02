@@ -9,47 +9,69 @@ package xyz.tcheeric.nostrdb;
  *   <li>java.library.path (for development)</li>
  *   <li>JAR resources (for distribution)</li>
  * </ul>
+ *
+ * <h2>Thread Safety</h2>
+ * <p>Native library loading uses the Initialization-on-Demand Holder idiom,
+ * which provides thread-safe lazy initialization without synchronization overhead.
+ * The JVM guarantees that class initialization is thread-safe.
  */
 final class NostrdbNative {
 
-    private static volatile boolean loaded = false;
-    private static volatile Throwable loadError = null;
+    /**
+     * Holder class for lazy, thread-safe native library initialization.
+     *
+     * <p>This pattern leverages the JVM's class initialization guarantees:
+     * the holder class is not initialized until first access, and initialization
+     * is guaranteed to be thread-safe by the JVM specification.
+     */
+    private static final class LibraryHolder {
+        static final boolean loaded;
+        static final Throwable loadError;
 
-    static {
-        loadNativeLibrary();
+        static {
+            boolean success = false;
+            Throwable error = null;
+
+            try {
+                // Try loading from java.library.path first
+                System.loadLibrary("nostrdb_jni");
+                success = true;
+            } catch (UnsatisfiedLinkError e) {
+                try {
+                    // Fall back to loading from JAR resources
+                    NativeLoader.loadFromJar("nostrdb_jni");
+                    success = true;
+                } catch (Exception ex) {
+                    error = ex;
+                    throw new RuntimeException("Failed to load nostrdb native library", ex);
+                }
+            }
+
+            loaded = success;
+            loadError = error;
+        }
+
+        // Force class initialization
+        static void ensureLoaded() {}
     }
 
-    private static synchronized void loadNativeLibrary() {
-        if (loaded) return;
-
-        try {
-            // Try loading from java.library.path first
-            System.loadLibrary("nostrdb_jni");
-            loaded = true;
-        } catch (UnsatisfiedLinkError e) {
-            try {
-                // Fall back to loading from JAR resources
-                NativeLoader.loadFromJar("nostrdb_jni");
-                loaded = true;
-            } catch (Exception ex) {
-                loadError = ex;
-                throw new RuntimeException("Failed to load nostrdb native library", ex);
-            }
-        }
+    static {
+        // Trigger library loading on class initialization
+        LibraryHolder.ensureLoaded();
     }
 
     /**
      * Check if the native library is loaded.
      */
     static boolean isLoaded() {
-        return loaded;
+        return LibraryHolder.loaded;
     }
 
     /**
      * Get the error that occurred during loading, if any.
      */
     static Throwable getLoadError() {
-        return loadError;
+        return LibraryHolder.loadError;
     }
 
     private NostrdbNative() {}

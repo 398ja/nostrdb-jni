@@ -2,8 +2,10 @@ package xyz.tcheeric.nostrdb;
 
 /**
  * Utility class for hexadecimal encoding and decoding.
+ *
+ * <p>This class is package-private as it's only used internally.
  */
-public final class HexUtil {
+final class HexUtil {
 
     private static final char[] HEX_CHARS = "0123456789abcdef".toCharArray();
 

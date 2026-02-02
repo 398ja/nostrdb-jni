@@ -6,9 +6,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * A read transaction for nostrdb.
  *
- * <p><b>IMPORTANT:</b> LMDB only allows one transaction per thread. Always use
- * try-with-resources to ensure proper cleanup.
- *
  * <p>Example usage:
  * <pre>{@code
  * try (Transaction txn = ndb.beginTransaction()) {
@@ -16,6 +13,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *     note.ifPresent(n -> System.out.println(n.content()));
  * }
  * }</pre>
+ *
+ * <h2>Thread Safety</h2>
+ * <p><b>CRITICAL:</b> LMDB only allows one transaction per thread. Do not share
+ * Transaction instances between threads. Each thread must create its own transaction.
+ * Violating this constraint causes undefined behavior in the native code.
+ *
+ * <h2>Resource Management</h2>
+ * <p>Transaction holds native resources and must be closed after use. Always use
+ * try-with-resources to ensure proper cleanup. Failing to close transactions will
+ * cause resource leaks and may block database writes.
  */
 public final class Transaction implements Closeable {
 

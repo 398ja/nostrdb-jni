@@ -22,6 +22,12 @@ import java.nio.charset.StandardCharsets;
  *   <li>lud16 - Lightning address</li>
  *   <li>website - Website URL</li>
  * </ul>
+ *
+ * <h2>Immutability</h2>
+ * <p>This class is immutable. All fields are final.
+ *
+ * <h2>Thread Safety</h2>
+ * <p>Profile instances are thread-safe and can be safely shared between threads.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final class Profile {

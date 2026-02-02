@@ -21,9 +21,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *   <li>Real-time subscriptions</li>
  * </ul>
  *
- * <p>The database is thread-safe for concurrent access. However, each thread should
- * use its own {@link Transaction} (LMDB constraint).
- *
  * <p>Example usage:
  * <pre>{@code
  * try (Ndb ndb = Ndb.open(Path.of("~/.nostrdb"))) {
@@ -42,6 +39,32 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *     }
  * }
  * }</pre>
+ *
+ * <h2>Thread Safety</h2>
+ * <p>The database instance is thread-safe for concurrent access. However, due to LMDB
+ * constraints, each thread <b>must use its own {@link Transaction}</b>. Sharing a
+ * Transaction between threads will cause undefined behavior.
+ *
+ * <h2>Security Considerations</h2>
+ * <ul>
+ *   <li>All inputs are validated before passing to native code</li>
+ *   <li>Byte array inputs are defensively copied to prevent TOCTOU attacks</li>
+ *   <li>Query limits are enforced (max {@link Filter#MAX_LIMIT}) to prevent resource exhaustion</li>
+ *   <li>Search queries are limited to {@link Filter#MAX_SEARCH_LENGTH} characters</li>
+ *   <li>Returned collections are unmodifiable</li>
+ * </ul>
+ *
+ * <h2>Native Library Loading</h2>
+ * <p>The native library is loaded automatically when this class is first accessed.
+ * It is loaded from either:
+ * <ol>
+ *   <li>{@code java.library.path} (for development)</li>
+ *   <li>JAR resources under {@code /natives/} (for distribution)</li>
+ * </ol>
+ *
+ * <h2>Resource Management</h2>
+ * <p>This class holds native resources and must be closed after use. Always use
+ * try-with-resources to ensure proper cleanup.
  */
 public final class Ndb implements Closeable {
 
@@ -57,9 +80,13 @@ public final class Ndb implements Closeable {
      *
      * @param dbPath Path to the database directory (will be created if it doesn't exist)
      * @return The Ndb instance
+     * @throws IllegalArgumentException if dbPath is null
      * @throws NostrdbException if the database cannot be opened
      */
     public static Ndb open(Path dbPath) {
+        if (dbPath == null) {
+            throw new IllegalArgumentException("Database path cannot be null");
+        }
         return open(dbPath.toString());
     }
 
@@ -68,9 +95,13 @@ public final class Ndb implements Closeable {
      *
      * @param dbPath Path to the database directory (will be created if it doesn't exist)
      * @return The Ndb instance
+     * @throws IllegalArgumentException if dbPath is null or blank
      * @throws NostrdbException if the database cannot be opened
      */
     public static Ndb open(String dbPath) {
+        if (dbPath == null || dbPath.isBlank()) {
+            throw new IllegalArgumentException("Database path cannot be null or blank");
+        }
         long ptr = NostrdbNative.ndbOpen(dbPath, 0);
         if (ptr == 0) {
             throw new NostrdbException("Failed to open database at " + dbPath);

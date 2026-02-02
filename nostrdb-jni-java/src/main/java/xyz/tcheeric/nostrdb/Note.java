@@ -23,6 +23,13 @@ import java.util.stream.Collectors;
  *   <li>tags - Array of tag arrays</li>
  *   <li>sig - 64-byte Schnorr signature</li>
  * </ul>
+ *
+ * <h2>Immutability</h2>
+ * <p>This class is immutable. All fields are final and the {@link #tags()} method
+ * returns an unmodifiable view to prevent modification of internal state.
+ *
+ * <h2>Thread Safety</h2>
+ * <p>Note instances are thread-safe and can be safely shared between threads.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public final class Note {

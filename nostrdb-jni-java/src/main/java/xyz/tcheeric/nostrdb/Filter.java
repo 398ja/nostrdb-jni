@@ -20,6 +20,24 @@ import java.util.concurrent.atomic.AtomicBoolean;
  *     List<QueryResult> results = ndb.query(txn, filter);
  * }
  * }</pre>
+ *
+ * <h2>Security Considerations</h2>
+ * <p>To prevent resource exhaustion attacks, the following limits are enforced:
+ * <ul>
+ *   <li>{@link #MAX_LIMIT} - Maximum query result limit (100,000,000)</li>
+ *   <li>{@link #MAX_KINDS} - Maximum event kinds per filter (100)</li>
+ *   <li>{@link #MAX_AUTHORS} - Maximum authors per filter (1,000)</li>
+ *   <li>{@link #MAX_TAG_VALUES} - Maximum tag values per tag filter (1,000)</li>
+ *   <li>{@link #MAX_SEARCH_LENGTH} - Maximum search query length (1,000 chars)</li>
+ *   <li>{@link #MAX_TAG_VALUE_LENGTH} - Maximum individual tag value length (1,000 chars)</li>
+ * </ul>
+ *
+ * <h2>Thread Safety</h2>
+ * <p>Filter instances are <b>not thread-safe</b>. Each thread should create its own Filter.
+ * The Builder is also not thread-safe and should not be shared between threads.
+ *
+ * <h2>Resource Management</h2>
+ * <p>Filter holds native resources and must be closed after use. Always use try-with-resources.
  */
 public final class Filter implements Closeable {
 

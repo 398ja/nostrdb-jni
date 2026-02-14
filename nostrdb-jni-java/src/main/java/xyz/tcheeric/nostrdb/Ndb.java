@@ -69,10 +69,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public final class Ndb implements Closeable {
 
     private final long ptr;
+    private final String dbPath;
     private final AtomicBoolean closed = new AtomicBoolean(false);
 
-    private Ndb(long ptr) {
+    private Ndb(long ptr, String dbPath) {
         this.ptr = ptr;
+        this.dbPath = dbPath;
     }
 
     /**
@@ -106,7 +108,7 @@ public final class Ndb implements Closeable {
         if (ptr == 0) {
             throw new NostrdbException("Failed to open database at " + dbPath);
         }
-        return new Ndb(ptr);
+        return new Ndb(ptr, dbPath);
     }
 
     /**
@@ -372,6 +374,63 @@ public final class Ndb implements Closeable {
     public void unsubscribe(Subscription subscription) {
         checkOpen();
         NostrdbNative.unsubscribe(ptr, subscription.rawId());
+    }
+
+    // ========================================================================
+    // Stats & Diagnostics
+    // ========================================================================
+
+    /**
+     * Get LMDB database statistics.
+     *
+     * @return Statistics for all LMDB sub-databases and event kind categories
+     * @throws NostrdbException if stats cannot be retrieved
+     */
+    public NdbStat getStats() {
+        checkOpen();
+        byte[] data = NostrdbNative.ndbStat(ptr);
+        if (data == null) {
+            throw new NostrdbException("Failed to get database statistics");
+        }
+        return NdbStat.fromBytes(data);
+    }
+
+    /**
+     * Get the number of active subscriptions.
+     *
+     * @return The subscription count
+     */
+    public int getSubscriptionCount() {
+        checkOpen();
+        return NostrdbNative.ndbSubscriptionCount(ptr);
+    }
+
+    /**
+     * Get the LMDB data file size in bytes.
+     *
+     * @return File size in bytes, or -1 if the file cannot be read
+     */
+    public long getDbFileSize() {
+        checkOpen();
+        return NostrdbNative.ndbDbFileSize(ptr, dbPath);
+    }
+
+    /**
+     * Check if the database is still open.
+     *
+     * @return true if open, false if closed
+     */
+    public boolean isOpen() {
+        return !closed.get();
+    }
+
+    /**
+     * Get the database path.
+     *
+     * @return The path to the database directory
+     */
+    public String getDbPath() {
+        return dbPath;
     }
 
     /**

@@ -9,6 +9,7 @@ nostrdb-jni brings the nostrdb embedded Nostr event database to the JVM with a R
 - **Real-time subscriptions** - Poll for new events matching filters
 - **Full-text search** - Search event content
 - **Thread-safe** - Concurrent access with per-thread transactions
+- **Observability** - Database stats, subscription counts, and file size metrics
 
 ## Quick Start
 
@@ -48,6 +49,7 @@ This documentation follows the [Diátaxis](https://diataxis.fr/) framework.
 - [Build from Source](docs/how-to/build-from-source.md) - Compile the native and Java libraries
 - [Query Events](docs/how-to/query-events.md) - Filter events by kind, author, tags, and time
 - [Subscribe to Events](docs/how-to/subscribe-events.md) - Receive real-time notifications
+- [Monitor Database](docs/how-to/monitor-database.md) - Track database stats, subscriptions, and file size
 - [Integrate with Spring Boot](docs/how-to/integrate-spring-boot.md) - Use in Spring applications
 
 ### Reference
@@ -71,7 +73,7 @@ This documentation follows the [Diátaxis](https://diataxis.fr/) framework.
 <dependency>
     <groupId>xyz.tcheeric</groupId>
     <artifactId>nostrdb-jni</artifactId>
-    <version>0.1.1-SNAPSHOT</version>
+    <version>0.2.0</version>
 </dependency>
 ```
 
@@ -137,6 +139,16 @@ try (Filter filter = Filter.builder().kinds(1).build();
 }
 ```
 
+### Monitor Database
+
+```java
+NdbStat stats = ndb.getStats();
+System.out.println("Total entries: " + stats.totalEventCount());
+System.out.println("Data size: " + stats.totalDataSize() + " bytes");
+System.out.println("Active subscriptions: " + ndb.getSubscriptionCount());
+System.out.println("DB file size: " + ndb.getDbFileSize() + " bytes");
+```
+
 ## Project Structure
 
 ```
@@ -149,6 +161,7 @@ nostrdb-jni/
 ├── nostrdb-jni-java/       # Java library
 │   └── src/main/java/xyz/tcheeric/nostrdb/
 │       ├── Ndb.java        # Main database class
+│       ├── NdbStat.java    # Database statistics
 │       ├── Transaction.java
 │       ├── Filter.java     # Query builder
 │       ├── Note.java       # Event object

@@ -322,4 +322,33 @@ final class NostrdbNative {
      * @param subId Subscription ID
      */
     static native void unsubscribe(long ndbPtr, long subId);
+
+    // ========================================================================
+    // Stats & Diagnostics
+    // ========================================================================
+
+    /**
+     * Get LMDB database statistics as JSON bytes.
+     *
+     * @param ndbPtr Pointer to the Ndb instance
+     * @return JSON bytes containing dbs, common_kinds, and other_kinds stats
+     */
+    static native byte[] ndbStat(long ndbPtr);
+
+    /**
+     * Get the number of active subscriptions.
+     *
+     * @param ndbPtr Pointer to the Ndb instance
+     * @return The subscription count
+     */
+    static native int ndbSubscriptionCount(long ndbPtr);
+
+    /**
+     * Get the LMDB data file size in bytes.
+     *
+     * @param ndbPtr Pointer to the Ndb instance (unused, kept for consistency)
+     * @param dbPath Path to the database directory
+     * @return File size in bytes, or -1 on error
+     */
+    static native long ndbDbFileSize(long ndbPtr, String dbPath);
 }

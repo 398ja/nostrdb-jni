@@ -152,8 +152,109 @@ List<Long> noteKeys = ndb.pollForNotes(sub, 100);
 #### `unsubscribe(Subscription subscription)`
 Cancels a subscription.
 
+#### `getStats()`
+Returns LMDB database statistics including record counts, key/value sizes, and page usage for all 16 sub-databases, 15 common event kinds, and an aggregate for other kinds.
+
+```java
+NdbStat stats = ndb.getStats();
+long totalEntries = stats.totalEventCount();
+long totalBytes = stats.totalDataSize();
+```
+
+**Returns:** `NdbStat` instance
+
+**Throws:** `NostrdbException` if stats cannot be retrieved
+
+#### `getSubscriptionCount()`
+Returns the number of currently active subscriptions.
+
+```java
+int activeSubs = ndb.getSubscriptionCount();
+```
+
+**Returns:** Active subscription count
+
+#### `getDbFileSize()`
+Returns the LMDB data file size in bytes.
+
+```java
+long sizeBytes = ndb.getDbFileSize();
+```
+
+**Returns:** File size in bytes, or `-1` if the file cannot be read
+
+#### `isOpen()`
+Checks if the database is still open.
+
+```java
+boolean open = ndb.isOpen();
+```
+
+#### `getDbPath()`
+Returns the path to the database directory.
+
+```java
+String path = ndb.getDbPath();
+```
+
 #### `close()`
 Closes the database. Called automatically with try-with-resources.
+
+---
+
+## NdbStat
+
+Database statistics returned by `Ndb.getStats()`. Immutable record.
+
+### Methods
+
+#### `dbs()`
+Returns statistics for each of the 16 LMDB sub-databases.
+
+```java
+List<NdbStat.DbCounts> dbStats = stats.dbs();
+```
+
+#### `commonKinds()`
+Returns statistics for the 15 most common event kinds.
+
+```java
+List<NdbStat.DbCounts> kindStats = stats.commonKinds();
+```
+
+#### `otherKinds()`
+Returns aggregate statistics for all other event kinds.
+
+```java
+NdbStat.DbCounts other = stats.otherKinds();
+```
+
+#### `totalEventCount()`
+Returns the total number of entries across all databases.
+
+```java
+long total = stats.totalEventCount();
+```
+
+#### `totalDataSize()`
+Returns the total data size (keys + values) across all databases in bytes.
+
+```java
+long bytes = stats.totalDataSize();
+```
+
+### NdbStat.DbCounts
+
+Statistics for a single LMDB database or kind category. Immutable record.
+
+#### `keySize()`
+Total size of all keys in bytes.
+
+#### `valueSize()`
+Total size of all values in bytes.
+
+#### `count()`
+Number of entries.
 
 ---
 

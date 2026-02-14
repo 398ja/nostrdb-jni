@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-02-14
+
+### Added
+
+- `NdbStat` class for database statistics (record counts, key/value sizes, page usage)
+- `Ndb.stat()` method to retrieve database statistics via `ndb_stat`
+- `Ndb.getSubscriptionCount()` method to get active subscription count
+- `Ndb.getDbFileSize()` method to get database file size in bytes
+- Native JNI bindings for `ndb_stat`, subscription count, and DB file size
+
+## [0.1.3] - 2026-02-07
+
+### Changed
+
+- Performance tuning based on audit findings
+- Comprehensive security documentation added to public classes
+
+### Fixed
+
+- Security audit findings from Oracle secure coding guidelines
+- Limit validation to prevent integer overflow in native code
+
 ## [0.1.2] - 2026-01-23
 
 ### Added
@@ -42,7 +64,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Profile operations
 - Subscription support
 
-[Unreleased]: https://github.com/398ja/nostrdb-jni/compare/v0.1.2...HEAD
+[Unreleased]: https://github.com/398ja/nostrdb-jni/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/398ja/nostrdb-jni/compare/v0.1.3...v0.2.0
+[0.1.3]: https://github.com/398ja/nostrdb-jni/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/398ja/nostrdb-jni/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/398ja/nostrdb-jni/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/398ja/nostrdb-jni/releases/tag/v0.1.0

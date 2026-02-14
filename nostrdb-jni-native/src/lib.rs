@@ -614,6 +614,118 @@ pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_unsubscribe(
 }
 
 // ============================================================================
+// Stats & Diagnostics
+// ============================================================================
+
+// FFI declarations for ndb_stat (not exposed by nostrdb-rs public API)
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+struct NdbStatCounts {
+    key_size: usize,
+    value_size: usize,
+    count: usize,
+}
+
+#[repr(C)]
+#[derive(Debug, Copy, Clone)]
+struct NdbStatRaw {
+    dbs: [NdbStatCounts; 16],
+    common_kinds: [NdbStatCounts; 15],
+    other_kinds: NdbStatCounts,
+}
+
+extern "C" {
+    fn ndb_stat(ndb: *mut std::ffi::c_void, stat: *mut NdbStatRaw) -> std::os::raw::c_int;
+}
+
+/// Get LMDB database statistics as JSON bytes.
+///
+/// Returns a JSON object with `dbs` (16 entries), `common_kinds` (15 entries),
+/// and `other_kinds`, each containing `key_size`, `value_size`, and `count`.
+///
+/// # Returns
+/// JSON bytes, or null on error
+#[no_mangle]
+pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_ndbStat(
+    mut env: JNIEnv,
+    _class: JClass,
+    ndb_ptr: jlong,
+) -> jbyteArray {
+    with_exception(&mut env, std::ptr::null_mut(), |env| {
+        let ndb = unsafe { util::ptr_to_ref::<Arc<Ndb>>(ndb_ptr, "ndb")? };
+
+        let mut stat: NdbStatRaw = unsafe { std::mem::zeroed() };
+        // ndb_stat returns 1 on success, 0 on failure
+        let ret = unsafe { ndb_stat(ndb.as_ptr() as *mut std::ffi::c_void, &mut stat) };
+        if ret == 0 {
+            return Err(Error::InvalidState("ndb_stat failed".to_string()));
+        }
+
+        let serialize_counts = |c: &NdbStatCounts| -> serde_json::Value {
+            serde_json::json!({
+                "key_size": c.key_size,
+                "value_size": c.value_size,
+                "count": c.count,
+            })
+        };
+
+        let dbs: Vec<serde_json::Value> = stat.dbs.iter().map(serialize_counts).collect();
+        let common_kinds: Vec<serde_json::Value> =
+            stat.common_kinds.iter().map(serialize_counts).collect();
+
+        let json = serde_json::json!({
+            "dbs": dbs,
+            "common_kinds": common_kinds,
+            "other_kinds": serialize_counts(&stat.other_kinds),
+        });
+
+        let bytes = serde_json::to_vec(&json)?;
+        Ok(rust_bytes_to_java(env, &bytes))
+    })
+}
+
+/// Get the number of active subscriptions.
+///
+/// # Returns
+/// The subscription count
+#[no_mangle]
+pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_ndbSubscriptionCount(
+    mut env: JNIEnv,
+    _class: JClass,
+    ndb_ptr: jlong,
+) -> jint {
+    with_exception(&mut env, 0, |_env| {
+        let ndb = unsafe { util::ptr_to_ref::<Arc<Ndb>>(ndb_ptr, "ndb")? };
+        Ok(ndb.subscription_count() as jint)
+    })
+}
+
+/// Get the LMDB data file size in bytes.
+///
+/// # Arguments
+/// * `ndb_ptr` - Pointer to the Ndb instance (unused, kept for consistency)
+/// * `db_path` - Path to the database directory
+///
+/// # Returns
+/// File size in bytes, or -1 on error
+#[no_mangle]
+pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_ndbDbFileSize(
+    mut env: JNIEnv,
+    _class: JClass,
+    _ndb_ptr: jlong,
+    db_path: JString,
+) -> jlong {
+    with_exception(&mut env, -1, |env| {
+        let path = java_string_to_rust(env, &db_path)?;
+        let data_file = std::path::Path::new(&path).join("data.mdb");
+        match std::fs::metadata(&data_file) {
+            Ok(meta) => Ok(meta.len() as jlong),
+            Err(_) => Ok(-1),
+        }
+    })
+}
+
+// ============================================================================
 // Helper Functions
 // ============================================================================
 

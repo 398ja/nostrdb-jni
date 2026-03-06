@@ -737,8 +737,11 @@ fn serialize_note(note: &nostrdb::Note) -> Result<Vec<u8>> {
         .map(|tag| {
             let mut tag_vec = Vec::new();
             for i in 0..tag.count() {
-                if let Some(s) = tag.get_str(i as u16) {
-                    tag_vec.push(s.to_string());
+                if let Some(ndb_str) = tag.get(i as u16) {
+                    match ndb_str.variant() {
+                        nostrdb::NdbStrVariant::Str(s) => tag_vec.push(s.to_string()),
+                        nostrdb::NdbStrVariant::Id(id) => tag_vec.push(hex::encode(id)),
+                    }
                 }
             }
             tag_vec

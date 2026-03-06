@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-03-06
+
+### Fixed
+
+- Handle packed ID tag values in `serialize_note` — nostrdb stores hex-like tag values (pubkeys, event IDs) as `NDB_PACKED_ID` binary, but `get_str()` silently dropped them, causing tags like `["p","<pubkey>"]` to serialize as `["p"]`
+
 ## [0.2.0] - 2026-02-14
 
 ### Added
@@ -64,7 +70,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Profile operations
 - Subscription support
 
-[Unreleased]: https://github.com/398ja/nostrdb-jni/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/398ja/nostrdb-jni/compare/v0.2.1...HEAD
+[0.2.1]: https://github.com/398ja/nostrdb-jni/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/398ja/nostrdb-jni/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/398ja/nostrdb-jni/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/398ja/nostrdb-jni/compare/v0.1.1...v0.1.2

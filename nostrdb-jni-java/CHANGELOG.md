@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-03-06
+
+### Fixed
+
+- Handle packed ID tag values in native `serialize_note` — tags like `["p","<pubkey>"]` were truncated to `["p"]` due to `NDB_PACKED_ID` binary values being silently dropped
+
 ## [0.1.3] - 2026-02-02
 
 ### Added
@@ -51,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Initial release
 
+[0.2.1]: https://github.com/398ja/nostrdb-jni/compare/v0.2.0...v0.2.1
 [0.1.3]: https://github.com/398ja/nostrdb-jni/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/398ja/nostrdb-jni/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/398ja/nostrdb-jni/compare/v0.1.0...v0.1.1

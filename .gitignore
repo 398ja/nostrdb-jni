@@ -3,3 +3,6 @@
 /nostrdb-jni-native/target/
 /.claude/
 /nostrdb-jni-java/.claude/
+/nostrdb-jni-inspector/target/
+/nostrdb-jni-inspector/io/
+dependency-reduced-pom.xml

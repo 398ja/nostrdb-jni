@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-03-11
+
+### Added
+
+- New `nostrdb-jni-inspector` module — lightweight HTTP sidecar for remote cache inspection and management
+- REST API for querying notes, profiles, statistics, full-text search, event ingestion, and database flush
+- Server-rendered Web UI using JTE templates and HTMX for interactive browsing
+- Docker Compose setup for REST and Web app services
+- Cache inspector specification and API documentation
+
 ## [0.2.1] - 2026-03-06
 
 ### Fixed
@@ -70,7 +80,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Profile operations
 - Subscription support
 
-[Unreleased]: https://github.com/398ja/nostrdb-jni/compare/v0.2.1...HEAD
+[Unreleased]: https://github.com/398ja/nostrdb-jni/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/398ja/nostrdb-jni/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/398ja/nostrdb-jni/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/398ja/nostrdb-jni/compare/v0.1.3...v0.2.0
 [0.1.3]: https://github.com/398ja/nostrdb-jni/compare/v0.1.2...v0.1.3

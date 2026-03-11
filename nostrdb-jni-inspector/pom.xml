@@ -6,7 +6,7 @@
 
     <groupId>xyz.tcheeric</groupId>
     <artifactId>nostrdb-jni-inspector</artifactId>
-    <version>0.1.0</version>
+    <version>0.3.0</version>
     <packaging>jar</packaging>
 
     <name>nostrdb-jni-inspector</name>
@@ -22,6 +22,17 @@
         <picocli.version>4.7.6</picocli.version>
     </properties>
 
+    <distributionManagement>
+        <repository>
+            <id>reposilite-releases</id>
+            <url>https://maven.398ja.xyz/releases</url>
+        </repository>
+        <snapshotRepository>
+            <id>reposilite-snapshots</id>
+            <url>https://maven.398ja.xyz/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
     <repositories>
         <repository>
             <id>reposilite-releases</id>
@@ -34,7 +45,7 @@
         <dependency>
             <groupId>xyz.tcheeric</groupId>
             <artifactId>nostrdb-jni</artifactId>
-            <version>0.2.1</version>
+            <version>0.3.0</version>
         </dependency>
 
         <!-- HTTP server -->
@@ -87,6 +98,15 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <resource>
+                <directory>src/main/jte</directory>
+                <targetPath>jte</targetPath>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -98,24 +118,27 @@
                 </configuration>
             </plugin>
 
-            <!-- JTE template precompilation -->
+            <!-- JTE template precompilation (disabled for now — templates compile at runtime) -->
+            <!--
             <plugin>
                 <groupId>gg.jte</groupId>
                 <artifactId>jte-maven-plugin</artifactId>
                 <version>${jte.version}</version>
                 <configuration>
                     <sourceDirectory>${project.basedir}/src/main/jte</sourceDirectory>
+                    <targetDirectory>${project.build.directory}/jte-classes</targetDirectory>
                     <contentType>Html</contentType>
                 </configuration>
                 <executions>
                     <execution>
-                        <phase>generate-sources</phase>
+                        <phase>process-classes</phase>
                         <goals>
                             <goal>precompile</goal>
                         </goals>
                     </execution>
                 </executions>
             </plugin>
+            -->
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

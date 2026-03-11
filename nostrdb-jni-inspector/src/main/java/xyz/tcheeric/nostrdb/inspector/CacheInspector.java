@@ -49,25 +49,10 @@ public class CacheInspector {
      */
     public void start() {
         // Set up JTE template engine
-        TemplateEngine templateEngine;
-        try {
-            // Try precompiled templates first (production)
-            templateEngine = TemplateEngine.createPrecompiled(ContentType.Html);
-        } catch (Exception e) {
-            // Fall back to directory resolver (development)
-            Path templateDir = Path.of("src/main/jte");
-            if (templateDir.toFile().exists()) {
-                DirectoryCodeResolver resolver = new DirectoryCodeResolver(templateDir);
-                templateEngine = TemplateEngine.create(resolver, ContentType.Html);
-            } else {
-                throw new RuntimeException("No JTE templates found. " +
-                        "Either precompile templates or run from project root.", e);
-            }
-        }
-
-        JavalinJte.init(templateEngine);
+        final TemplateEngine templateEngine = createTemplateEngine();
 
         app = Javalin.create(javalinConfig -> {
+            javalinConfig.fileRenderer(new JavalinJte(templateEngine));
             javalinConfig.staticFiles.add("/static");
 
             // CORS
@@ -149,6 +134,23 @@ public class CacheInspector {
      */
     public Ndb getNdb() {
         return ndbRef.get();
+    }
+
+    private static TemplateEngine createTemplateEngine() {
+        // Try local directory first (development)
+        Path templateDir = Path.of("src/main/jte");
+        if (templateDir.toFile().exists()) {
+            DirectoryCodeResolver resolver = new DirectoryCodeResolver(templateDir);
+            return TemplateEngine.create(resolver, ContentType.Html);
+        }
+
+        // Fall back to classpath (production JAR)
+        try {
+            return TemplateEngine.createPrecompiled(ContentType.Html);
+        } catch (Exception e) {
+            throw new RuntimeException("No JTE templates found. " +
+                    "Either run from project root or use the fat JAR.", e);
+        }
     }
 
     /**

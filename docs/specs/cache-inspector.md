@@ -112,16 +112,16 @@ GET /api/notes?kind=1&author=<hex>&since=<unix>&until=<unix>&tag=<name>:<value>&
 ```
 
 **Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `kind` | int (repeatable) | Filter by event kind(s) |
-| `author` | hex string (repeatable) | Filter by author pubkey(s) |
-| `since` | unix timestamp | Events created after this time |
-| `until` | unix timestamp | Events created before this time |
-| `tag` | `name:value` (repeatable) | Filter by tag (e.g., `d:identifier`, `p:<pubkey>`, `e:<eventid>`) |
-| `search` | string | Full-text search |
-| `limit` | int (default: 50, max: 1000) | Results per page |
-| `offset` | int (default: 0) | Pagination offset (implemented via over-fetch + skip) |
+| Parameter | Type                       | Description                                                         |
+|-----------|----------------------------|---------------------------------------------------------------------|
+| `kind`    | int (repeatable)           | Filter by event kind(s)                                             |
+| `author`  | hex string (repeatable)    | Filter by author pubkey(s)                                          |
+| `since`   | unix timestamp             | Events created after this time                                      |
+| `until`   | unix timestamp             | Events created before this time                                     |
+| `tag`     | `name:value` (repeatable)  | Filter by tag (e.g., `d:identifier`, `p:<pubkey>`, `e:<eventid>`)   |
+| `search`  | string                     | Full-text search                                                    |
+| `limit`   | int (default: 50, max: 1000) | Results per page                                                  |
+| `offset`  | int (default: 0)           | Pagination offset (implemented via over-fetch + skip)               |
 
 **Response:**
 ```json
@@ -162,10 +162,10 @@ GET /api/profiles?q=<query>&limit=20
 ```
 
 **Query Parameters:**
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `q` | string | Name search query |
-| `limit` | int (default: 20, max: 100) | Max results |
+| Parameter | Type                        | Description        |
+|-----------|-----------------------------|--------------------|
+| `q`       | string                      | Name search query  |
+| `limit`   | int (default: 20, max: 100) | Max results        |
 
 **Response:**
 ```json
@@ -468,14 +468,14 @@ java -jar nostrdb-inspector.jar \
   --api-key "optional-secret"
 ```
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--db-path` | (required) | Path to nostrdb data directory |
-| `--port` | `7777` | HTTP listen port |
-| `--host` | `127.0.0.1` | Bind address (localhost only by default) |
-| `--api-key` | (none) | If set, all requests must include `X-API-Key` header |
-| `--read-only` | `false` | Disable flush and ingest endpoints |
-| `--cors-origin` | (none) | Allowed CORS origin, if needed |
+| Flag            | Default       | Description                                            |
+|-----------------|---------------|--------------------------------------------------------|
+| `--db-path`     | (required)    | Path to nostrdb data directory                         |
+| `--port`        | `7777`        | HTTP listen port                                       |
+| `--host`        | `127.0.0.1`  | Bind address (localhost only by default)               |
+| `--api-key`     | (none)        | If set, all requests must include `X-API-Key` header   |
+| `--read-only`   | `false`       | Disable flush and ingest endpoints                     |
+| `--cors-origin` | (none)        | Allowed CORS origin, if needed                         |
 
 ### 5.2 Embedded Mode (Library)
 
@@ -583,14 +583,14 @@ nostrdb-jni-inspector/
 
 ### Dependencies
 
-| Dependency | Version | Purpose |
-|---|---|---|
-| `nostrdb-jni` | 0.2.1+ | Core database access |
-| `io.javalin:javalin` | 6.x | HTTP server (~1 MB) |
-| `io.javalin:javalin-rendering` | 6.x | Template engine integration for Javalin |
-| `gg.jte:jte` | 3.x | JTE template engine (compile-time type-safe templates) |
-| `com.fasterxml.jackson.core:jackson-databind` | 2.17.x | JSON for API endpoints (already a transitive dep) |
-| `info.picocli:picocli` | 4.x | CLI argument parsing (standalone mode) |
+| Dependency                                     | Version  | Purpose                                                |
+|------------------------------------------------|----------|--------------------------------------------------------|
+| `nostrdb-jni`                                  | 0.2.1+   | Core database access                                   |
+| `io.javalin:javalin`                           | 6.x      | HTTP server (~1 MB)                                    |
+| `io.javalin:javalin-rendering`                 | 6.x      | Template engine integration for Javalin                |
+| `gg.jte:jte`                                   | 3.x      | JTE template engine (compile-time type-safe templates) |
+| `com.fasterxml.jackson.core:jackson-databind`  | 2.17.x   | JSON for API endpoints (already a transitive dep)      |
+| `info.picocli:picocli`                         | 4.x      | CLI argument parsing (standalone mode)                 |
 
 HTMX is included as a single `<script>` tag in `main.jte` from a vendored copy in `src/main/resources/static/htmx.min.js` (~14 KB gzipped). No NPM, no CDN dependency.
 
@@ -661,21 +661,21 @@ Since nostrdb doesn't support individual deletes, flush is all-or-nothing:
 ### 8.4 Kind Labels
 Map known kind numbers to human-readable labels for the UI:
 
-| Kind | Label |
-|------|-------|
-| 0 | Metadata |
-| 1 | Short Text Note |
-| 2 | Recommend Relay |
-| 3 | Contacts |
-| 4 | Encrypted DM |
-| 5 | Event Deletion |
-| 6 | Repost |
-| 7 | Reaction |
-| 9735 | Zap |
-| 10002 | Relay List |
-| 30023 | Long-form Content |
-| 30078 | Application-specific Data |
-| ... | (extensible map) |
+| Kind    | Label                      |
+|---------|----------------------------|
+| 0       | Metadata                   |
+| 1       | Short Text Note            |
+| 2       | Recommend Relay            |
+| 3       | Contacts                   |
+| 4       | Encrypted DM               |
+| 5       | Event Deletion             |
+| 6       | Repost                     |
+| 7       | Reaction                   |
+| 9735    | Zap                        |
+| 10002   | Relay List                 |
+| 30023   | Long-form Content          |
+| 30078   | Application-specific Data  |
+| ...     | (extensible map)           |
 
 ### 8.5 Human-Readable Formatting
 - File sizes: bytes → KB/MB/GB

@@ -10,6 +10,7 @@ nostrdb-jni brings the nostrdb embedded Nostr event database to the JVM with a R
 - **Full-text search** - Search event content
 - **Thread-safe** - Concurrent access with per-thread transactions
 - **Observability** - Database stats, subscription counts, and file size metrics
+- **Cache Inspector** - Remote HTTP sidecar with REST API and web UI for browsing, querying, and managing the database
 
 ## Quick Start
 
@@ -50,6 +51,7 @@ This documentation follows the [Diátaxis](https://diataxis.fr/) framework.
 - [Query Events](docs/how-to/query-events.md) - Filter events by kind, author, tags, and time
 - [Subscribe to Events](docs/how-to/subscribe-events.md) - Receive real-time notifications
 - [Monitor Database](docs/how-to/monitor-database.md) - Track database stats, subscriptions, and file size
+- [Inspect Cache](docs/how-to/inspect-cache.md) - Browse and manage the database remotely via HTTP
 - [Integrate with Spring Boot](docs/how-to/integrate-spring-boot.md) - Use in Spring applications
 
 ### Reference
@@ -57,6 +59,7 @@ This documentation follows the [Diátaxis](https://diataxis.fr/) framework.
 *Technical descriptions of the API.*
 
 - [API Reference](docs/reference/api.md) - Complete class and method documentation
+- [Cache Inspector API](docs/reference/cache-inspector-api.md) - REST API endpoints for the cache inspector
 
 ### Explanation
 
@@ -73,7 +76,7 @@ This documentation follows the [Diátaxis](https://diataxis.fr/) framework.
 <dependency>
     <groupId>xyz.tcheeric</groupId>
     <artifactId>nostrdb-jni</artifactId>
-    <version>0.2.0</version>
+    <version>0.3.0</version>
 </dependency>
 ```
 
@@ -153,21 +156,31 @@ System.out.println("DB file size: " + ndb.getDbFileSize() + " bytes");
 
 ```
 nostrdb-jni/
-├── nostrdb-jni-native/     # Rust JNI bindings
+├── nostrdb-jni-native/         # Rust JNI bindings
 │   └── src/
-│       ├── lib.rs          # JNI exports
-│       ├── error.rs        # Error handling
-│       └── util.rs         # Utilities
-├── nostrdb-jni-java/       # Java library
+│       ├── lib.rs              # JNI exports
+│       ├── error.rs            # Error handling
+│       └── util.rs             # Utilities
+├── nostrdb-jni-java/           # Java library
 │   └── src/main/java/xyz/tcheeric/nostrdb/
-│       ├── Ndb.java        # Main database class
-│       ├── NdbStat.java    # Database statistics
+│       ├── Ndb.java            # Main database class
+│       ├── NdbStat.java        # Database statistics
 │       ├── Transaction.java
-│       ├── Filter.java     # Query builder
-│       ├── Note.java       # Event object
-│       ├── Profile.java    # Profile object
+│       ├── Filter.java         # Query builder
+│       ├── Note.java           # Event object
+│       ├── Profile.java        # Profile object
 │       └── ...
-└── docs/                   # Documentation
+├── nostrdb-jni-inspector/      # Cache inspector (HTTP sidecar)
+│   └── src/main/
+│       ├── java/.../inspector/
+│       │   ├── CacheInspector.java   # HTTP server setup
+│       │   ├── api/                  # REST API handlers (JSON)
+│       │   ├── handlers/             # Page handlers (JTE templates)
+│       │   ├── model/                # View model records
+│       │   ├── middleware/           # Auth & rate limiting
+│       │   └── util/                 # Formatting & kind labels
+│       └── jte/                      # JTE templates + HTMX fragments
+└── docs/                       # Documentation
     ├── tutorials/
     ├── how-to/
     ├── reference/

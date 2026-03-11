@@ -4,20 +4,31 @@ This document explains how nostrdb-jni works and the design decisions behind it.
 
 ## Overview
 
-nostrdb-jni provides Java bindings to [nostrdb](https://github.com/damus-io/nostrdb), a high-performance embedded database for Nostr events. The architecture consists of three layers:
+nostrdb-jni provides Java bindings to [nostrdb](https://github.com/damus-io/nostrdb), a high-performance embedded database for Nostr events. The architecture consists of three layers, plus an optional HTTP inspector sidecar:
 
 ```
-┌─────────────────────────────────────┐
-│         Java Application            │
-├─────────────────────────────────────┤
-│      nostrdb-jni (Java API)         │
-├─────────────────────────────────────┤
-│      nostrdb-jni (Rust/JNI)         │
-├─────────────────────────────────────┤
-│           nostrdb (Rust)            │
-├─────────────────────────────────────┤
-│             LMDB (C)                │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│                  Java Application                    │
+│                                                      │
+│   ┌──────────────────────┐  ┌─────────────────────┐  │
+│   │   Application Code   │  │  Cache Inspector     │  │
+│   │                      │  │  (optional sidecar)  │  │
+│   │                      │  │                      │  │
+│   │                      │  │  Javalin + JTE/HTMX  │  │
+│   │                      │  │  REST API + Web UI   │  │
+│   └──────────┬───────────┘  └──────────┬──────────┘  │
+│              │                         │              │
+│              └────────────┬────────────┘              │
+│                           │                           │
+├───────────────────────────┼───────────────────────────┤
+│               nostrdb-jni (Java API)                  │
+├───────────────────────────┼───────────────────────────┤
+│               nostrdb-jni (Rust/JNI)                  │
+├───────────────────────────┼───────────────────────────┤
+│                    nostrdb (Rust)                      │
+├───────────────────────────┼───────────────────────────┤
+│                      LMDB (C)                         │
+└───────────────────────────────────────────────────────┘
 ```
 
 ## Components
@@ -34,6 +45,19 @@ The Java library provides a clean, idiomatic API:
 - **Subscription** - Real-time event subscription
 
 All classes use `Closeable` for proper resource management with try-with-resources.
+
+### Cache Inspector (`nostrdb-jni-inspector`)
+
+An optional HTTP sidecar for remote database inspection and management:
+
+- **CacheInspector** - Javalin HTTP server with REST API and server-rendered web UI
+- **API handlers** - JSON endpoints for stats, notes, profiles, search, ingest, and flush
+- **Page handlers** - Server-rendered HTML pages using JTE templates
+- **Fragment handlers** - HTMX partial HTML responses for interactive UI updates
+- **Middleware** - API key authentication and per-IP token bucket rate limiting
+- **View models** - Typed Java records for template rendering (compile-time checked)
+
+The inspector shares the same `Ndb` instance as the application (embedded mode) or opens its own (standalone mode). It uses a `ReadWriteLock` to coordinate access: all read operations take the read lock, while flush takes the write lock to safely close and reopen the database.
 
 ### Native Library (`nostrdb-jni-native`)
 

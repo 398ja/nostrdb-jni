@@ -1,0 +1,11 @@
+**/target/
+**/.git
+**/.gitignore
+**/.idea
+**/*.iml
+**/node_modules/
+*.md
+LICENSE
+docs/
+audits/
+.github/

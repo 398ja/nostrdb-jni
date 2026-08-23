@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.2] - 2026-08-23
+
+### Fixed
+
+- `#p` and `#e` tag filters matched nothing. nostrdb ingests those two tag
+  values as 32-byte binary ids, but `filterTag` sent every tag through
+  `FilterBuilder::tags`, which adds *string* elements — a string element can
+  never match an id element, so the query returned an empty set with no error.
+  Hex values for `p`/`e` now go through `pubkeys()`/`events()` as id elements;
+  every other tag, and any non-hex value, keeps the string path.
+
 ## [0.2.1] - 2026-03-06
 
 ### Fixed

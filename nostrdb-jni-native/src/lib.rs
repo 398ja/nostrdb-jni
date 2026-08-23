@@ -346,6 +346,19 @@ pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_filterAuthors(
     })
 }
 
+/// Decodes a 64-character hex string into the 32 raw bytes nostrdb indexes
+/// `#p` / `#e` tag values as. `None` for anything that is not 64 hex chars.
+fn hex_to_32(s: &str) -> Option<[u8; 32]> {
+    if s.len() != 64 {
+        return None;
+    }
+    let mut out = [0u8; 32];
+    for (i, byte) in out.iter_mut().enumerate() {
+        *byte = u8::from_str_radix(s.get(i * 2..i * 2 + 2)?, 16).ok()?;
+    }
+    Some(out)
+}
+
 /// Add tag filter
 ///
 /// # Arguments
@@ -379,8 +392,26 @@ pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_filterTag(
             values.push(s);
         }
 
-        let value_refs: Vec<&str> = values.iter().map(|s| s.as_str()).collect();
-        let new_filter = filter.tags(value_refs, tag_char);
+        // `#p` and `#e` values are ingested as 32-byte binary ids, not strings.
+        // Filtering them through `tags()` adds *string* elements, which can never
+        // match an id element, so every gift-wrap-by-recipient query silently
+        // returned nothing. Route hex ids through the id-element path instead.
+        let ids: Option<Vec<[u8; 32]>> = if tag_char == 'p' || tag_char == 'e' {
+            values.iter().map(|v| hex_to_32(v)).collect()
+        } else {
+            None
+        };
+
+        let new_filter = match ids {
+            Some(ids) if tag_char == 'p' => filter.pubkeys(ids.iter()),
+            Some(ids) => filter.events(ids.iter()),
+            // Not hex — malformed for p/e, and the normal case for every other
+            // tag. A string element is the right shape there.
+            None => {
+                let value_refs: Vec<&str> = values.iter().map(|s| s.as_str()).collect();
+                filter.tags(value_refs, tag_char)
+            }
+        };
         Ok(box_to_ptr(new_filter))
     })
 }

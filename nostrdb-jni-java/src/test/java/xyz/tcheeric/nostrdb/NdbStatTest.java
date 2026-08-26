@@ -3,6 +3,7 @@ package xyz.tcheeric.nostrdb;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -133,5 +134,34 @@ class NdbStatTest {
     void testGetDbPath() {
         String expected = tempDir.resolve("statdb").toString();
         assertEquals(expected, ndb.getDbPath(), "Should return the path used to open the database");
+    }
+
+    /**
+     * noteCount() must report stored notes, not the sum of every sub-database.
+     *
+     * <p>nostrdb keeps one index entry per note in note_id, note_kind,
+     * note_pubkey and friends, so totalEventCount() runs roughly six times
+     * higher. Both numbers are legitimate; conflating them puts a plausible
+     * wrong answer on a dashboard, which is worse than no answer.
+     */
+    @Test
+    @DisplayName("noteCount() counts notes, not index entries")
+    void noteCountExcludesIndexDatabases() {
+        // Order is nostrdb's enum ndb_dbs: NDB_DB_NOTE first, then META,
+        // PROFILE, NOTE_ID, ... — not the alphabetical order mdb_stat prints.
+        String json = "{\"dbs\":[{\"count\":54851},{\"count\":0},{\"count\":234},"
+                + "{\"count\":54851},{\"count\":234}]}";
+        NdbStat stat = NdbStat.fromBytes(json.getBytes(StandardCharsets.UTF_8));
+
+        assertEquals(54851, stat.noteCount(), "noteCount must read the note database only");
+        assertEquals(110170, stat.totalEventCount(), "totalEventCount still sums everything");
+    }
+
+    /** Missing or truncated stats must read as zero rather than throwing. */
+    @Test
+    @DisplayName("noteCount() is 0 when stats are unavailable")
+    void noteCountHandlesMissingStats() {
+        NdbStat empty = NdbStat.fromBytes("{\"dbs\":[]}".getBytes(StandardCharsets.UTF_8));
+        assertEquals(0, empty.noteCount());
     }
 }

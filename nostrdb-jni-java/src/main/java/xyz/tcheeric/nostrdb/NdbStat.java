@@ -42,6 +42,9 @@ public record NdbStat(
 
     /**
      * Returns the total number of entries across all databases.
+     *
+     * <p>This includes the per-note index databases, so it is <em>not</em> a
+     * count of stored notes — see {@link #noteCount()} for that.
      */
     public long totalEventCount() {
         long total = 0;
@@ -51,6 +54,34 @@ public record NdbStat(
             }
         }
         return total;
+    }
+
+    /**
+     * Index of the {@code note} sub-database within {@link #dbs}.
+     *
+     * <p>Fixed by nostrdb's {@code enum ndb_dbs}, whose first member is
+     * {@code NDB_DB_NOTE}. The order is the C enum's, NOT the alphabetical
+     * order {@code mdb_stat -a} prints — reading the index off mdb_stat output
+     * gives 1 (ndb_meta) and a gauge that reports zero.
+     */
+    private static final int NOTE_DB_INDEX = 0;
+
+    /**
+     * Returns the number of stored notes.
+     *
+     * <p>This is the count most callers mean by "how many events are cached".
+     * It is deliberately distinct from {@link #totalEventCount()}, which sums
+     * every sub-database including the per-note indexes and so reports roughly
+     * six times this figure — a number that looks like an event count, is not
+     * one, and has no obvious tell when read off a dashboard.
+     *
+     * @return the number of notes, or 0 when stats are unavailable
+     */
+    public long noteCount() {
+        if (dbs == null || dbs.size() <= NOTE_DB_INDEX) {
+            return 0;
+        }
+        return dbs.get(NOTE_DB_INDEX).count();
     }
 
     /**

@@ -3,3 +3,6 @@
 /nostrdb-jni-native/target/
 /.claude/
 /nostrdb-jni-java/.claude/
+
+# Stray shade-plugin output from a module that no longer exists
+nostrdb-jni-inspector/

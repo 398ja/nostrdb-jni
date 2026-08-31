@@ -73,9 +73,19 @@ This documentation follows the [Diátaxis](https://diataxis.fr/) framework.
 <dependency>
     <groupId>xyz.tcheeric</groupId>
     <artifactId>nostrdb-jni</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.2</version>
 </dependency>
 ```
+
+Consumers that import `imani-bom` should omit the `<version>` element; the BOM
+pins it.
+
+**Use 0.2.2 or later.** Before it, `#p` and `#e` tag filters matched nothing:
+nostrdb ingests those two tag values as 32-byte binary ids, but `filterTag` sent
+every tag through `FilterBuilder::tags`, which adds *string* elements. A string
+element can never match an id element, so the query returned an empty set **with
+no error**. That is the worst shape of bug for a filter: a caller sees no results
+and no failure, and cannot tell an empty relay from a broken query.
 
 ### Requirements
 

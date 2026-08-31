@@ -1,0 +1,4 @@
+# Names in docs that are not types in this repository. Checked by `doccheck`.
+
+# JDK type named in the architecture explanation
+AtomicBoolean

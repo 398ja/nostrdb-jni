@@ -90,6 +90,15 @@ final class NostrdbNative {
     static native long ndbOpen(String dbPath, long configPtr);
 
     /**
+     * Open a nostrdb database with an explicit LMDB map size.
+     *
+     * @param dbPath Path to the database directory
+     * @param mapSize LMDB map size in bytes (must be positive)
+     * @return Pointer to the Ndb instance, or 0 on error
+     */
+    static native long ndbOpenWithMapSize(String dbPath, long mapSize);
+
+    /**
      * Close a nostrdb database.
      *
      * @param ndbPtr Pointer to the Ndb instance

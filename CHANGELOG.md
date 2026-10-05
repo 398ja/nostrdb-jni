@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-05
+
+Numbered 0.4.0 because a 0.3.0 artifact (the inspector release line) already
+exists on the release repository.
+
+### Added
+
+- `Ndb.open(Path, long mapSizeBytes)` and `Ndb.open(String, long mapSizeBytes)`
+  set the LMDB map size. Before this, every database used nostrdb's 32 GiB
+  default and a consumer's map-size setting could not reach LMDB. A full map
+  refuses writes (`MDB_MAP_FULL`), so the size is a hard cap on `data.mdb`.
+  Needed by imani-nostrdb to honour `NOSTRDB_MAP_SIZE`.
+
 ## [0.2.2] - 2026-08-23
 
 ### Fixed

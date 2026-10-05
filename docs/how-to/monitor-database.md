@@ -61,6 +61,20 @@ if (fileSize >= 0) {
 }
 ```
 
+## Cap the Database Size
+
+The file can grow up to the LMDB map size, 32 GiB by default. Open with an explicit map
+size to cap it lower, and alert on the file size well before the cap:
+
+```java
+try (Ndb ndb = Ndb.open(Path.of("/data/nostrdb"), 8L * 1024 * 1024 * 1024)) {
+    // writes beyond 8 GiB are refused with MDB_MAP_FULL
+}
+```
+
+A full map does not throw from `processEvent`, because ingestion is asynchronous. The
+note is dropped. Watch `getDbFileSize()` and keep it well under the map size.
+
 ## Periodic Health Check
 
 Combine all metrics into a periodic health check:

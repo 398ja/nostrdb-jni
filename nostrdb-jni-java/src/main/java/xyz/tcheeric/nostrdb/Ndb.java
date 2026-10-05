@@ -112,6 +112,54 @@ public final class Ndb implements Closeable {
     }
 
     /**
+     * Open a database with an explicit LMDB map size.
+     *
+     * <p>The map size is the hard upper bound on the database file. nostrdb's default is
+     * 32 GiB. Once the file reaches the map size, LMDB refuses writes with
+     * {@code MDB_MAP_FULL}: {@link #processEvent} still returns, because ingestion is
+     * asynchronous, but the note is never stored. Pick a size that leaves headroom and
+     * watch {@link #getDbFileSize()}.
+     *
+     * <p>If the existing file is larger than {@code mapSizeBytes}, LMDB grows the map to
+     * the file size rather than failing.
+     *
+     * @param dbPath       path to the database directory (created if it doesn't exist)
+     * @param mapSizeBytes LMDB map size in bytes, must be positive
+     * @return the Ndb instance
+     * @throws IllegalArgumentException if dbPath is null or mapSizeBytes is not positive
+     * @throws NostrdbException if the database cannot be opened
+     */
+    public static Ndb open(Path dbPath, long mapSizeBytes) {
+        if (dbPath == null) {
+            throw new IllegalArgumentException("Database path cannot be null");
+        }
+        return open(dbPath.toString(), mapSizeBytes);
+    }
+
+    /**
+     * Open a database with an explicit LMDB map size. See {@link #open(Path, long)}.
+     *
+     * @param dbPath       path to the database directory (created if it doesn't exist)
+     * @param mapSizeBytes LMDB map size in bytes, must be positive
+     * @return the Ndb instance
+     * @throws IllegalArgumentException if dbPath is null or blank, or mapSizeBytes is not positive
+     * @throws NostrdbException if the database cannot be opened
+     */
+    public static Ndb open(String dbPath, long mapSizeBytes) {
+        if (dbPath == null || dbPath.isBlank()) {
+            throw new IllegalArgumentException("Database path cannot be null or blank");
+        }
+        if (mapSizeBytes <= 0) {
+            throw new IllegalArgumentException("Map size must be positive, got " + mapSizeBytes);
+        }
+        long ptr = NostrdbNative.ndbOpenWithMapSize(dbPath, mapSizeBytes);
+        if (ptr == 0) {
+            throw new NostrdbException("Failed to open database at " + dbPath);
+        }
+        return new Ndb(ptr, dbPath);
+    }
+
+    /**
      * Process a single Nostr event JSON.
      *
      * <p>The JSON can be in either relay format {@code ["EVENT", "subid", {...}]} or

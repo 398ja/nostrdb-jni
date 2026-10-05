@@ -29,6 +29,21 @@ Opens a database at the specified path.
 Ndb ndb = Ndb.open("/path/to/db");
 ```
 
+#### `open(Path dbPath, long mapSizeBytes)` / `open(String dbPath, long mapSizeBytes)`
+Opens a database with an explicit LMDB map size, in bytes. Since 0.4.0.
+
+The map size is the hard cap on `data.mdb`. nostrdb's default is 32 GiB. When the file
+reaches the map size, LMDB refuses writes with `MDB_MAP_FULL`. Ingestion is asynchronous,
+so `processEvent` still returns: the note is simply never stored. An existing file larger
+than the map size makes LMDB grow the map to the file size.
+
+```java
+Ndb ndb = Ndb.open(Path.of("/path/to/db"), 8L * 1024 * 1024 * 1024); // 8 GiB
+```
+
+**Throws:** `IllegalArgumentException` if the path is null or blank or the size is not positive;
+`NostrdbException` if the database cannot be opened
+
 ### Instance Methods
 
 #### `processEvent(String json)`

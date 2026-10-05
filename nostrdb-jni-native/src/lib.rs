@@ -46,6 +46,39 @@ pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_ndbOpen(
     })
 }
 
+/// Create new Ndb instance with an explicit LMDB map size
+///
+/// # Arguments
+/// * `db_path` - Path to the database directory
+/// * `map_size` - LMDB map size in bytes; must be positive. This is the hard cap
+///   on the database file: once it is reached, writes fail with MDB_MAP_FULL.
+///
+/// # Returns
+/// Pointer to Arc<Ndb> as jlong, or 0 on error
+#[no_mangle]
+pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_ndbOpenWithMapSize(
+    mut env: JNIEnv,
+    _class: JClass,
+    db_path: JString,
+    map_size: jlong,
+) -> jlong {
+    with_exception(&mut env, 0, |env| {
+        if map_size <= 0 {
+            return Err(Error::InvalidState(format!(
+                "map size must be positive, got {}",
+                map_size
+            )));
+        }
+        let size = usize::try_from(map_size).map_err(|_| {
+            Error::InvalidState(format!("map size {} does not fit in usize", map_size))
+        })?;
+        let path = java_string_to_rust(env, &db_path)?;
+        let config = Config::new().set_mapsize(size);
+        let ndb = Ndb::new(&path, &config)?;
+        Ok(box_to_ptr(Arc::new(ndb)))
+    })
+}
+
 /// Destroy Ndb instance
 #[no_mangle]
 pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_ndbClose(

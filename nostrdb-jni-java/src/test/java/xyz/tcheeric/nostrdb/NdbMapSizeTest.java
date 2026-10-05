@@ -94,6 +94,27 @@ class NdbMapSizeTest {
         assertThrows(IllegalArgumentException.class, () -> Ndb.open((Path) null, ONE_MIB));
     }
 
+    // An existing database file bigger than the requested map must still open, with every
+    // note readable. LMDB raises the map to the file size instead of refusing to open. This is
+    // what a gateway sees when NOSTRDB_MAP_SIZE is set below the size of a cache that already
+    // exists: the service must start, not crash-loop.
+    @Test
+    @DisplayName("an existing file larger than the map size still opens and reads")
+    void existingFileLargerThanMapSizeOpens() throws Exception {
+        List<String> events = fixture();
+        Path dir = tempDir.resolve("grown");
+        try (Ndb ndb = Ndb.open(dir)) {
+            ndb.processEvents(String.join("\n", events));
+            assertEquals(FIXTURE_NOTES, waitForCount(ndb, FIXTURE_NOTES));
+        }
+        long fileSize = java.nio.file.Files.size(dir.resolve("data.mdb"));
+        assertTrue(fileSize > ONE_MIB, "precondition: file " + fileSize + " must exceed 1 MiB");
+
+        try (Ndb ndb = Ndb.open(dir, ONE_MIB)) {
+            assertEquals(FIXTURE_NOTES, waitForCount(ndb, FIXTURE_NOTES), "all notes still readable");
+        }
+    }
+
     private static List<String> fixture() throws IOException {
         try (InputStream raw = NdbMapSizeTest.class.getResourceAsStream("/big-notes.ldjson.gz");
              BufferedReader reader = new BufferedReader(new InputStreamReader(

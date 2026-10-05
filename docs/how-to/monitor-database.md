@@ -75,6 +75,10 @@ try (Ndb ndb = Ndb.open(Path.of("/data/nostrdb"), 8L * 1024 * 1024 * 1024)) {
 A full map does not throw from `processEvent`, because ingestion is asynchronous. The
 note is dropped. Watch `getDbFileSize()` and keep it well under the map size.
 
+An existing file larger than the map size still opens: LMDB raises the map to the file
+size. So lowering the setting never stops a service from starting, but the file is then
+already at its cap. Check the current `data.mdb` size before lowering the map size.
+
 ## Periodic Health Check
 
 Combine all metrics into a periodic health check:

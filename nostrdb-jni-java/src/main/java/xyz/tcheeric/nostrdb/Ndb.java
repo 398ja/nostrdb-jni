@@ -258,6 +258,39 @@ public final class Ndb implements Closeable {
     }
 
     /**
+     * Copy notes from this database into another, byte for byte.
+     *
+     * <p>Each note is serialised by nostrdb itself and queued on {@code target}, so the copy
+     * is exact. Nothing passes through a Java string, so even a note whose content Java
+     * cannot round-trip is copied. The target still verifies each note's id and signature.
+     *
+     * <p>Ingestion is asynchronous: the notes are queued, not yet written. Close the target
+     * or poll it to see them.
+     *
+     * @param txn      a read transaction on this database
+     * @param target   the database to copy into; must not be this one
+     * @param noteKeys note keys in this database
+     * @return how many notes were queued; missing keys and refused notes are not counted
+     * @throws IllegalArgumentException if target is null or this database
+     * @since 0.4.0
+     */
+    public int copyNotes(Transaction txn, Ndb target, long[] noteKeys) {
+        checkOpen();
+        if (target == null || target == this) {
+            throw new IllegalArgumentException("target must be another open database");
+        }
+        target.checkOpen();
+        if (noteKeys == null || noteKeys.length == 0) {
+            return 0;
+        }
+        int queued = NostrdbNative.copyNotes(ptr, txn.ptr(), target.ptr, noteKeys.clone());
+        if (queued < 0) {
+            throw new NostrdbException("Failed to copy notes");
+        }
+        return queued;
+    }
+
+    /**
      * Query for notes matching a filter.
      *
      * @param txn The transaction

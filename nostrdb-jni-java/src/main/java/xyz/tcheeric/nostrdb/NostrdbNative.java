@@ -171,6 +171,17 @@ final class NostrdbNative {
      */
     static native byte[] getNoteByKey(long ndbPtr, long txnPtr, long noteKey);
 
+    /**
+     * Copy notes byte for byte into another database, using nostrdb's own serialiser.
+     *
+     * @param srcPtr   Pointer to the source Ndb
+     * @param txnPtr   Pointer to a read Transaction on the source
+     * @param dstPtr   Pointer to the target Ndb
+     * @param noteKeys Source note keys
+     * @return Number of notes queued on the target, or -1 on error
+     */
+    static native int copyNotes(long srcPtr, long txnPtr, long dstPtr, long[] noteKeys);
+
     // ========================================================================
     // Query
     // ========================================================================

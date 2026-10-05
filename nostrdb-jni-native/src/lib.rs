@@ -4,7 +4,7 @@
 //! library, enabling Java applications to leverage the high-performance
 //! embedded Nostr event database.
 
-use jni::objects::{JByteArray, JClass, JObjectArray, JString};
+use jni::objects::{JByteArray, JClass, JLongArray, JObjectArray, JString};
 use jni::sys::{jbyteArray, jint, jlong, jobjectArray};
 use jni::JNIEnv;
 use nostrdb::{Config, Filter, Ndb, NoteKey, Transaction};
@@ -254,6 +254,68 @@ pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_getNoteByKey(
             Err(e) => Err(e.into()),
         }
     })
+}
+
+/// Copy notes byte for byte from one database into another
+///
+/// Each note is serialised with nostrdb's own writer (`ndb_note_json`) and queued on the
+/// target with `ndb_process_event`. nostrdb's writer and parser use the same escaping, and
+/// its id check uses the same commitment, so this reproduces the stored note exactly. A
+/// note that Java cannot round-trip (for example, bytes that are not valid UTF-8) still
+/// copies this way.
+///
+/// # Arguments
+/// * `src_ptr` - Pointer to the source Ndb
+/// * `txn_ptr` - Pointer to a read Transaction on the source
+/// * `dst_ptr` - Pointer to the target Ndb
+/// * `note_keys` - Source note keys to copy
+///
+/// # Returns
+/// The number of notes queued on the target. Keys that are not found, notes that do not
+/// serialise, and notes the ingest queue refuses are not counted. Ingestion is asynchronous.
+#[no_mangle]
+pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_copyNotes(
+    mut env: JNIEnv,
+    _class: JClass,
+    src_ptr: jlong,
+    txn_ptr: jlong,
+    dst_ptr: jlong,
+    note_keys: JLongArray,
+) -> jint {
+    with_exception(&mut env, -1, |env| {
+        let src = unsafe { util::ptr_to_ref::<Arc<Ndb>>(src_ptr, "src ndb")? };
+        let txn = unsafe { util::ptr_to_ref::<Transaction>(txn_ptr, "transaction")? };
+        let dst = unsafe { util::ptr_to_ref::<Arc<Ndb>>(dst_ptr, "dst ndb")? };
+        let len = env.get_array_length(&note_keys)? as usize;
+        let mut keys = vec![0i64; len];
+        env.get_long_array_region(&note_keys, 0, &mut keys)?;
+
+        let mut queued = 0;
+        for key in keys {
+            let note = match src.get_note_by_key(txn, NoteKey::new(key as u64)) {
+                Ok(note) => note,
+                Err(_) => continue,
+            };
+            if let Some(json) = raw_note_json(&note) {
+                if dst.process_event(&json).is_ok() {
+                    queued += 1;
+                }
+            }
+        }
+        Ok(queued)
+    })
+}
+
+/// nostrdb's own JSON for a note, growing the buffer for large notes.
+fn raw_note_json(note: &nostrdb::Note) -> Option<String> {
+    let mut bufsize = 1024 * 1024;
+    while bufsize <= 64 * 1024 * 1024 {
+        match note.json_with_bufsize(bufsize) {
+            Ok(json) => return Some(json),
+            Err(_) => bufsize *= 4,
+        }
+    }
+    None
 }
 
 // ============================================================================

@@ -110,6 +110,23 @@ Gets a note by its internal key. Faster than `getNoteById` for repeated lookups.
 Optional<Note> note = ndb.getNoteByKey(txn, noteKey);
 ```
 
+#### `copyNotes(Transaction txn, Ndb target, long[] noteKeys)`
+Copies notes from this database into `target`, byte for byte. Since 0.4.0.
+
+nostrdb serialises each note with its own writer and queues it on the target, so the copy
+reproduces the note exactly, including raw control characters that a Java JSON writer
+would escape as `\uXXXX` (which nostrdb's parser refuses). The target still verifies ids
+and signatures. Ingestion is asynchronous.
+
+```java
+try (Transaction txn = source.beginTransaction()) {
+    int queued = source.copyNotes(txn, target, new long[]{key1, key2});
+}
+```
+
+**Returns:** the number of notes queued; missing keys and refused notes are not counted
+**Throws:** `IllegalArgumentException` if `target` is null or this database
+
 #### `query(Transaction txn, Filter filter)`
 Queries for notes matching a filter. Returns keys only.
 

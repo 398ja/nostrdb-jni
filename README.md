@@ -73,7 +73,7 @@ This documentation follows the [Diátaxis](https://diataxis.fr/) framework.
 <dependency>
     <groupId>xyz.tcheeric</groupId>
     <artifactId>nostrdb-jni</artifactId>
-    <version>0.2.2</version>
+    <version>0.4.0</version>
 </dependency>
 ```
 

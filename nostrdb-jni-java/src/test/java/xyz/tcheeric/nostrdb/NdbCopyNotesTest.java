@@ -84,6 +84,20 @@ class NdbCopyNotesTest {
         }
     }
 
+    // A transaction opened on a different database would make nostrdb read note keys from
+    // the wrong environment, so copyNotes refuses it before any native call.
+    @Test
+    @DisplayName("copyNotes rejects a transaction from another database")
+    void rejectsForeignTransaction() {
+        try (Ndb source = Ndb.open(tempDir.resolve("src4"));
+             Ndb other = Ndb.open(tempDir.resolve("other4"));
+             Ndb target = Ndb.open(tempDir.resolve("dst4"));
+             Transaction foreign = other.beginTransaction()) {
+            assertThrows(IllegalArgumentException.class,
+                    () -> source.copyNotes(foreign, target, new long[]{1}));
+        }
+    }
+
     static List<String> fixture() throws IOException {
         try (InputStream in = NdbCopyNotesTest.class.getResourceAsStream("/tricky-notes.ldjson")) {
             String all = new String(in.readAllBytes(), StandardCharsets.UTF_8);

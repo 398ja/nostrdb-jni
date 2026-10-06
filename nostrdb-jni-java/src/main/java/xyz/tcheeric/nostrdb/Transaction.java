@@ -43,6 +43,11 @@ public final class Transaction implements Closeable {
         return ptr;
     }
 
+    /** The database this transaction was opened on (for internal use). */
+    Ndb ndb() {
+        return ndb;
+    }
+
     /**
      * Check if this transaction is still open.
      *

@@ -258,26 +258,41 @@ public final class Ndb implements Closeable {
     }
 
     /**
-     * Copy notes from this database into another, byte for byte.
+     * Copy notes from this database into another using nostrdb's own serialisation.
      *
-     * <p>Each note is serialised by nostrdb itself and queued on {@code target}, so the copy
-     * is exact. Nothing passes through a Java string, so even a note whose content Java
-     * cannot round-trip is copied. The target still verifies each note's id and signature.
+     * <p>Each note is serialised by nostrdb itself ({@code ndb_note_json}) and queued on
+     * {@code target}, which parses it and re-verifies its id and signature. The id, signature
+     * and every signed field are preserved; nostrdb-side state that is not part of the note is
+     * not: relay provenance ("seen on" relays), note metadata counts and the ingest time are
+     * rebuilt by the target. Nothing passes through a Java string, so a note whose content
+     * Java cannot round-trip still copies.
      *
-     * <p>Ingestion is asynchronous: the notes are queued, not yet written. Close the target
-     * or poll it to see them.
+     * <p>Ingestion is asynchronous. The return value counts notes <em>queued</em> on the
+     * target, not notes stored: the target can still drop a queued note (for example a
+     * failed verification or a full map). Close the target, or poll it, and look the ids up
+     * to know what was stored.
+     *
+     * <p>A kind-6 repost carries the reposted note as JSON in its content, and nostrdb's
+     * ingester always ingests that embedded note as well. nostrdb has no per-call switch for
+     * this, so copying a kind-6 repost can also add its embedded note to {@code target}, even
+     * if that note was not in {@code noteKeys}.
      *
      * @param txn      a read transaction on this database
      * @param target   the database to copy into; must not be this one
      * @param noteKeys note keys in this database
-     * @return how many notes were queued; missing keys and refused notes are not counted
-     * @throws IllegalArgumentException if target is null or this database
+     * @return how many notes were queued on the target; missing keys and notes the ingest
+     *         queue refused are not counted. This is not the number stored.
+     * @throws IllegalArgumentException if target is null or this database, or if
+     *         {@code txn} was not opened on this database
      * @since 0.4.0
      */
     public int copyNotes(Transaction txn, Ndb target, long[] noteKeys) {
         checkOpen();
         if (target == null || target == this) {
             throw new IllegalArgumentException("target must be another open database");
+        }
+        if (txn == null || txn.ndb() != this) {
+            throw new IllegalArgumentException("txn must be a transaction on this database");
         }
         target.checkOpen();
         if (noteKeys == null || noteKeys.length == 0) {

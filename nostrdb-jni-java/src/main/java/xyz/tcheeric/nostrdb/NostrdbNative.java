@@ -172,7 +172,7 @@ final class NostrdbNative {
     static native byte[] getNoteByKey(long ndbPtr, long txnPtr, long noteKey);
 
     /**
-     * Copy notes byte for byte into another database, using nostrdb's own serialiser.
+     * Copy notes into another database using nostrdb's own serialisation (id and sig preserved, relay provenance not). Returns the count queued, not stored.
      *
      * @param srcPtr   Pointer to the source Ndb
      * @param txnPtr   Pointer to a read Transaction on the source

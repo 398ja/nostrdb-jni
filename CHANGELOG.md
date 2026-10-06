@@ -20,8 +20,10 @@ exists on the release repository.
   refuses writes (`MDB_MAP_FULL`), so the size is a hard cap on `data.mdb`.
   Needed by imani-nostrdb to honour `NOSTRDB_MAP_SIZE`.
 - `Ndb.copyNotes(Transaction, Ndb target, long[] noteKeys)` copies notes into another
-  database byte for byte. nostrdb serialises each note itself (`ndb_note_json`), so the
-  JSON matches nostrdb's parser and id check exactly. A Java JSON writer does not:
+  database using nostrdb's own serialisation (`ndb_note_json`), re-verified by the
+  target: id and sig are preserved, relay provenance is not. It returns the count
+  queued, not stored, refuses a transaction from another database, and a copied kind-6
+  repost also ingests its embedded note. A Java JSON writer does not:
   Jackson writes U+0001 as `\u0001`, and nostrdb's parser refuses `\u` escapes, so
   notes with raw control characters could not be rebuilt. Used by the imani-nostrdb
   retention rebuild.

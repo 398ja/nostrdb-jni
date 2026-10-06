@@ -256,13 +256,19 @@ pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_getNoteByKey(
     })
 }
 
-/// Copy notes byte for byte from one database into another
+/// Copy notes from one database into another using nostrdb's own serialisation
 ///
 /// Each note is serialised with nostrdb's own writer (`ndb_note_json`) and queued on the
-/// target with `ndb_process_event`. nostrdb's writer and parser use the same escaping, and
-/// its id check uses the same commitment, so this reproduces the stored note exactly. A
-/// note that Java cannot round-trip (for example, bytes that are not valid UTF-8) still
-/// copies this way.
+/// target with `ndb_process_event`, which parses it and re-verifies the id and signature.
+/// nostrdb's writer and parser use the same escaping, so the id, signature and every signed
+/// field are preserved. State outside the note is not: relay provenance, metadata counts and
+/// ingest time are rebuilt by the target. A note that Java cannot round-trip (for example,
+/// bytes that are not valid UTF-8) still copies this way.
+///
+/// A kind-6 repost's content is the reposted note's JSON, and nostrdb's ingester always
+/// ingests that embedded note too (`ndb_ingester_process_note`). There is no per-call flag
+/// to turn this off, only a per-database ingest filter, so copying a kept repost can add its
+/// embedded note to the target. Callers that verify by id must tolerate extra notes.
 ///
 /// # Arguments
 /// * `src_ptr` - Pointer to the source Ndb
@@ -271,7 +277,7 @@ pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_getNoteByKey(
 /// * `note_keys` - Source note keys to copy
 ///
 /// # Returns
-/// The number of notes queued on the target. Keys that are not found, notes that do not
+/// The number of notes queued on the target, not the number stored. Keys that are not found, notes that do not
 /// serialise, and notes the ingest queue refuses are not counted. Ingestion is asynchronous.
 #[no_mangle]
 pub extern "system" fn Java_xyz_tcheeric_nostrdb_NostrdbNative_copyNotes(

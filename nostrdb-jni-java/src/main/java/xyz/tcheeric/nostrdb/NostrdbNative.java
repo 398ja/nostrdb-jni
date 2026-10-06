@@ -90,6 +90,15 @@ final class NostrdbNative {
     static native long ndbOpen(String dbPath, long configPtr);
 
     /**
+     * Open a nostrdb database with an explicit LMDB map size.
+     *
+     * @param dbPath Path to the database directory
+     * @param mapSize LMDB map size in bytes (must be positive)
+     * @return Pointer to the Ndb instance, or 0 on error
+     */
+    static native long ndbOpenWithMapSize(String dbPath, long mapSize);
+
+    /**
      * Close a nostrdb database.
      *
      * @param ndbPtr Pointer to the Ndb instance
@@ -161,6 +170,17 @@ final class NostrdbNative {
      * @return Serialized note as JSON bytes, or null if not found
      */
     static native byte[] getNoteByKey(long ndbPtr, long txnPtr, long noteKey);
+
+    /**
+     * Copy notes into another database using nostrdb's own serialisation (id and sig preserved, relay provenance not). Returns the count queued, not stored.
+     *
+     * @param srcPtr   Pointer to the source Ndb
+     * @param txnPtr   Pointer to a read Transaction on the source
+     * @param dstPtr   Pointer to the target Ndb
+     * @param noteKeys Source note keys
+     * @return Number of notes queued on the target, or -1 on error
+     */
+    static native int copyNotes(long srcPtr, long txnPtr, long dstPtr, long[] noteKeys);
 
     // ========================================================================
     // Query

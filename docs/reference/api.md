@@ -29,6 +29,21 @@ Opens a database at the specified path.
 Ndb ndb = Ndb.open("/path/to/db");
 ```
 
+#### `open(Path dbPath, long mapSizeBytes)` / `open(String dbPath, long mapSizeBytes)`
+Opens a database with an explicit LMDB map size, in bytes. Since 0.4.0.
+
+The map size is the hard cap on `data.mdb`. nostrdb's default is 32 GiB. When the file
+reaches the map size, LMDB refuses writes with `MDB_MAP_FULL`. Ingestion is asynchronous,
+so `processEvent` still returns: the note is simply never stored. An existing file larger
+than the map size makes LMDB grow the map to the file size.
+
+```java
+Ndb ndb = Ndb.open(Path.of("/path/to/db"), 8L * 1024 * 1024 * 1024); // 8 GiB
+```
+
+**Throws:** `IllegalArgumentException` if the path is null or blank or the size is not positive;
+`NostrdbException` if the database cannot be opened
+
 ### Instance Methods
 
 #### `processEvent(String json)`
@@ -94,6 +109,32 @@ Gets a note by its internal key. Faster than `getNoteById` for repeated lookups.
 ```java
 Optional<Note> note = ndb.getNoteByKey(txn, noteKey);
 ```
+
+#### `copyNotes(Transaction txn, Ndb target, long[] noteKeys)`
+Copies notes from this database into `target` using nostrdb's own serialisation. Since 0.4.0.
+
+nostrdb serialises each note with its own writer and queues it on the target, which parses
+it and re-verifies the id and signature. The id, signature and every signed field are
+preserved, including raw control characters that a Java JSON writer would escape as
+`\uXXXX` (which nostrdb's parser refuses). State outside the note is not copied: relay
+provenance ("seen on" relays), metadata counts and ingest time are rebuilt by the target.
+Ingestion is asynchronous.
+
+A kind-6 repost's content is the reposted note's JSON, and nostrdb always ingests that
+embedded note too. nostrdb has no per-call switch for this, so copying a repost can add
+its embedded note to `target` even when that note was not asked for.
+
+```java
+try (Transaction txn = source.beginTransaction()) {
+    int queued = source.copyNotes(txn, target, new long[]{key1, key2});
+}
+```
+
+**Returns:** the number of notes queued, not stored; missing keys and notes the ingest
+queue refused are not counted. The target can still drop a queued note, so look ids up
+after closing or polling the target.
+**Throws:** `IllegalArgumentException` if `target` is null or this database, or if `txn`
+belongs to another database
 
 #### `query(Transaction txn, Filter filter)`
 Queries for notes matching a filter. Returns keys only.

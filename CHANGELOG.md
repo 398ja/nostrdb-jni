@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-10-05
+
+Numbered 0.4.0 because a 0.3.0 artifact (the inspector release line) already
+exists on the release repository.
+
+### Added
+
+- `Ndb.open(Path, long mapSizeBytes)` and `Ndb.open(String, long mapSizeBytes)`
+  set the LMDB map size. Before this, every database used nostrdb's 32 GiB
+  default and a consumer's map-size setting could not reach LMDB. A full map
+  refuses writes (`MDB_MAP_FULL`), so the size is a hard cap on `data.mdb`.
+  Needed by imani-nostrdb to honour `NOSTRDB_MAP_SIZE`.
+- `Ndb.copyNotes(Transaction, Ndb target, long[] noteKeys)` copies notes into another
+  database using nostrdb's own serialisation (`ndb_note_json`), re-verified by the
+  target: id and sig are preserved, relay provenance is not. It returns the count
+  queued, not stored, refuses a transaction from another database, and a copied kind-6
+  repost also ingests its embedded note. A Java JSON writer does not:
+  Jackson writes U+0001 as `\u0001`, and nostrdb's parser refuses `\u` escapes, so
+  notes with raw control characters could not be rebuilt. Used by the imani-nostrdb
+  retention rebuild.
+- Test: opening an existing `data.mdb` larger than the requested map size still
+  opens and reads every note (LMDB raises the map to the file size).
+- Test fixture `tricky-notes.ldjson` and its generator `scripts/gen-tricky-notes.rs`:
+  raw control characters, DEL, U+2028, emoji, quotes and backslashes, odd tags.
+
+### Known nostrdb limits (found while writing the fixture)
+
+nostrdb (398ja/nostrdb-rs 6956b9f) refuses some valid NIP-01 notes at ingest, so a
+nostrdb cache can never hold them: a 64-character UPPERCASE hex tag value (packed as a
+binary id and written back lowercase, so the id check fails), content that is exactly
+`tags`, and a tag value that is exactly a two-byte escape such as `"\""` or `"\n"`.
+
 ## [0.2.2] - 2026-08-23
 
 ### Fixed

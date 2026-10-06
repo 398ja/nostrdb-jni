@@ -112,6 +112,54 @@ public final class Ndb implements Closeable {
     }
 
     /**
+     * Open a database with an explicit LMDB map size.
+     *
+     * <p>The map size is the hard upper bound on the database file. nostrdb's default is
+     * 32 GiB. Once the file reaches the map size, LMDB refuses writes with
+     * {@code MDB_MAP_FULL}: {@link #processEvent} still returns, because ingestion is
+     * asynchronous, but the note is never stored. Pick a size that leaves headroom and
+     * watch {@link #getDbFileSize()}.
+     *
+     * <p>If the existing file is larger than {@code mapSizeBytes}, LMDB grows the map to
+     * the file size rather than failing.
+     *
+     * @param dbPath       path to the database directory (created if it doesn't exist)
+     * @param mapSizeBytes LMDB map size in bytes, must be positive
+     * @return the Ndb instance
+     * @throws IllegalArgumentException if dbPath is null or mapSizeBytes is not positive
+     * @throws NostrdbException if the database cannot be opened
+     */
+    public static Ndb open(Path dbPath, long mapSizeBytes) {
+        if (dbPath == null) {
+            throw new IllegalArgumentException("Database path cannot be null");
+        }
+        return open(dbPath.toString(), mapSizeBytes);
+    }
+
+    /**
+     * Open a database with an explicit LMDB map size. See {@link #open(Path, long)}.
+     *
+     * @param dbPath       path to the database directory (created if it doesn't exist)
+     * @param mapSizeBytes LMDB map size in bytes, must be positive
+     * @return the Ndb instance
+     * @throws IllegalArgumentException if dbPath is null or blank, or mapSizeBytes is not positive
+     * @throws NostrdbException if the database cannot be opened
+     */
+    public static Ndb open(String dbPath, long mapSizeBytes) {
+        if (dbPath == null || dbPath.isBlank()) {
+            throw new IllegalArgumentException("Database path cannot be null or blank");
+        }
+        if (mapSizeBytes <= 0) {
+            throw new IllegalArgumentException("Map size must be positive, got " + mapSizeBytes);
+        }
+        long ptr = NostrdbNative.ndbOpenWithMapSize(dbPath, mapSizeBytes);
+        if (ptr == 0) {
+            throw new NostrdbException("Failed to open database at " + dbPath);
+        }
+        return new Ndb(ptr, dbPath);
+    }
+
+    /**
      * Process a single Nostr event JSON.
      *
      * <p>The JSON can be in either relay format {@code ["EVENT", "subid", {...}]} or
@@ -207,6 +255,54 @@ public final class Ndb implements Closeable {
         checkOpen();
         byte[] data = NostrdbNative.getNoteByKey(ptr, txn.ptr(), noteKey);
         return Optional.ofNullable(data).map(Note::fromBytes);
+    }
+
+    /**
+     * Copy notes from this database into another using nostrdb's own serialisation.
+     *
+     * <p>Each note is serialised by nostrdb itself ({@code ndb_note_json}) and queued on
+     * {@code target}, which parses it and re-verifies its id and signature. The id, signature
+     * and every signed field are preserved; nostrdb-side state that is not part of the note is
+     * not: relay provenance ("seen on" relays), note metadata counts and the ingest time are
+     * rebuilt by the target. Nothing passes through a Java string, so a note whose content
+     * Java cannot round-trip still copies.
+     *
+     * <p>Ingestion is asynchronous. The return value counts notes <em>queued</em> on the
+     * target, not notes stored: the target can still drop a queued note (for example a
+     * failed verification or a full map). Close the target, or poll it, and look the ids up
+     * to know what was stored.
+     *
+     * <p>A kind-6 repost carries the reposted note as JSON in its content, and nostrdb's
+     * ingester always ingests that embedded note as well. nostrdb has no per-call switch for
+     * this, so copying a kind-6 repost can also add its embedded note to {@code target}, even
+     * if that note was not in {@code noteKeys}.
+     *
+     * @param txn      a read transaction on this database
+     * @param target   the database to copy into; must not be this one
+     * @param noteKeys note keys in this database
+     * @return how many notes were queued on the target; missing keys and notes the ingest
+     *         queue refused are not counted. This is not the number stored.
+     * @throws IllegalArgumentException if target is null or this database, or if
+     *         {@code txn} was not opened on this database
+     * @since 0.4.0
+     */
+    public int copyNotes(Transaction txn, Ndb target, long[] noteKeys) {
+        checkOpen();
+        if (target == null || target == this) {
+            throw new IllegalArgumentException("target must be another open database");
+        }
+        if (txn == null || txn.ndb() != this) {
+            throw new IllegalArgumentException("txn must be a transaction on this database");
+        }
+        target.checkOpen();
+        if (noteKeys == null || noteKeys.length == 0) {
+            return 0;
+        }
+        int queued = NostrdbNative.copyNotes(ptr, txn.ptr(), target.ptr, noteKeys.clone());
+        if (queued < 0) {
+            throw new NostrdbException("Failed to copy notes");
+        }
+        return queued;
     }
 
     /**
